@@ -60,6 +60,9 @@ drizzle/
 *.pem
 .cache/
 
+# MCP configuration (contains secrets)
+.mcp.json
+
 # clerk configuration (can include secrets)
 /.clerk/
 
