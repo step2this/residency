@@ -44,6 +44,12 @@ Mobile-first web application for divorced families to manage child visitation sc
 - Input validation on both client AND server
 - Never trust client-side data
 
+### Development Workflow Rules
+- **NEVER start dev servers** (pnpm dev, npm start, etc.) - they become zombie background processes
+- User will start and stop all servers manually
+- NEVER run background processes without explicit user request
+- If user needs a server started, inform them but don't start it yourself
+
 ## Project Structure
 
 ```
