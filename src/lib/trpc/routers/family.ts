@@ -224,7 +224,7 @@ export const familyRouter = router({
           userId: member.userId,
           role: member.role,
         },
-        newData: null!,
+        newData: null,
       });
 
       // Remove member

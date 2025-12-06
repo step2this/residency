@@ -144,7 +144,7 @@ export const childRouter = router({
           lastName: child.lastName,
           dateOfBirth: child.dateOfBirth,
         },
-        newData: null!,
+        newData: null,
       });
 
       // Delete child (cascade will handle related records)

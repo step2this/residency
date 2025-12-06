@@ -189,7 +189,7 @@ export const auditLogs = pgTable(
     entityType: varchar('entity_type', { length: 100 }).notNull(), // e.g., 'visitation_event', 'swap_request'
     entityId: uuid('entity_id').notNull(),
     oldData: jsonb('old_data'),
-    newData: jsonb('new_data').notNull(),
+    newData: jsonb('new_data'),
     ipAddress: varchar('ip_address', { length: 45 }),
     userAgent: text('user_agent'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

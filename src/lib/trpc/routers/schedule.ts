@@ -179,7 +179,7 @@ export const scheduleRouter = router({
           startTime: event.startTime,
           endTime: event.endTime,
         },
-        newData: null!,
+        newData: null,
       });
 
       // Delete event (cascade will handle related swap requests)
