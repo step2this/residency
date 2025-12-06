@@ -1,5 +1,13 @@
 # CoParent Schedule - Child Visitation Scheduling App
 
+## Quick Reference (Check This First!)
+- **Database**: Neon Postgres (ALL environments - never local) → See "Database Strategy"
+- **API**: tRPC v11 (never GraphQL)
+- **ORM**: Drizzle (never Prisma)
+- **Auth**: Clerk (passkeys + 2FA)
+- **Deployment**: SST v3 → AWS Lambda
+- **NEVER start servers** - user controls all processes
+
 ## Project Overview
 Mobile-first web application for divorced families to manage child visitation schedules. Built with modern React/Next.js stack, serverless AWS backend, and emphasis on security for sensitive family data.
 
@@ -28,6 +36,17 @@ Mobile-first web application for divorced families to manage child visitation sc
 
 ## Critical Constraints
 
+### Database Strategy (READ THIS FIRST)
+**USE NEON FOR EVERYTHING - NO EXCEPTIONS**
+- **Development**: Connect directly to Neon cloud database
+- **Staging**: Neon cloud database
+- **Production**: Neon cloud database
+- **NEVER use local Postgres** - always use Neon's connection string
+- **Connection**: Direct to Neon via `postgresql://...neon.tech/...` (no localhost proxy)
+- **Driver**: `drizzle-orm/neon-serverless` with `@neondatabase/serverless`
+
+**Why:** Neon is serverless, has built-in branching, and ensures dev/prod parity.
+
 ### DO NOT USE
 - GraphQL (use tRPC instead)
 - Redux/Zustand for server state (use Server Components)
@@ -35,6 +54,7 @@ Mobile-first web application for divorced families to manage child visitation sc
 - Aurora Serverless (use Neon)
 - AWS Amplify for deployment (use SST)
 - react-big-calendar or FullCalendar (use Schedule-X)
+- **Local Postgres** (use Neon cloud for all environments)
 
 ### Security Requirements
 - All auth flows via Clerk

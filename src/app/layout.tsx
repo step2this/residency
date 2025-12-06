@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { TRPCProvider } from '@/lib/trpc/provider';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
@@ -21,10 +22,12 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <body className={inter.className}>
-          <TRPCProvider>
-            {children}
-            <Toaster />
-          </TRPCProvider>
+          <NuqsAdapter>
+            <TRPCProvider>
+              {children}
+              <Toaster />
+            </TRPCProvider>
+          </NuqsAdapter>
         </body>
       </html>
     </ClerkProvider>

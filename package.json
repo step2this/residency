@@ -38,6 +38,7 @@
     "@trpc/next": "^11.0.0-rc.690",
     "@trpc/react-query": "^11.0.0-rc.690",
     "@trpc/server": "^11.0.0-rc.690",
+    "bufferutil": "^4.0.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -53,6 +54,8 @@
     "superjson": "^2.2.6",
     "svix": "^1.82.0",
     "tailwind-merge": "^3.4.0",
+    "utf-8-validate": "^6.0.5",
+    "ws": "^8.18.3",
     "zod": "^3.24.1"
   },
   "devDependencies": {
@@ -64,6 +67,7 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "dotenv": "^17.2.3",

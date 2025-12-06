@@ -55,12 +55,22 @@ export const familyRouter = router({
     }),
 
   // Get user's family
-  get: familyProcedure.query(async ({ ctx }) => {
-    const { db, familyId } = ctx;
+  get: protectedProcedure.query(async ({ ctx }) => {
+    const { db, userId } = ctx;
+
+    // Find user's family membership
+    const membership = await db.query.familyMembers.findFirst({
+      where: eq(familyMembers.userId, userId),
+    });
+
+    // Return null if user has no family (onboarding not completed)
+    if (!membership) {
+      return null;
+    }
 
     // Get family with members and children
     const family = await db.query.families.findFirst({
-      where: eq(families.id, familyId),
+      where: eq(families.id, membership.familyId),
       with: {
         members: {
           with: {
@@ -70,13 +80,6 @@ export const familyRouter = router({
         children: true,
       },
     });
-
-    if (!family) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'Family not found',
-      });
-    }
 
     return family;
   }),
