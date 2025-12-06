@@ -176,6 +176,116 @@ export const protectedProcedure = publicProcedure.use(async ({ ctx, next }) => {
 3. Run `pnpm test` - all tests green
 4. Verify mobile responsiveness in dev tools
 
+## Git Commit Strategy
+
+### Organize Commits by Logical Boundaries
+
+Create separate, focused commits for each distinct concern:
+
+**Good commit organization:**
+```bash
+feat: initialize project foundation        # Dependencies, configs
+feat: implement database schema           # Complete schema in one commit
+feat: implement Clerk authentication      # All auth files together
+feat: build tRPC v11 infrastructure       # Complete tRPC setup
+feat: add Zod validation schemas          # All schemas together
+feat: implement family router             # One router at a time
+```
+
+**Why this works:**
+- Each commit is self-contained and functional
+- Easy to review changes by feature
+- Simple to revert if needed
+- Clear project evolution in git log
+
+### Commit Message Format
+
+Use conventional commits with descriptive bodies:
+
+```
+<type>: <short description>
+
+<detailed explanation if needed>
+
+<any breaking changes or notes>
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+```
+
+**Types:**
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `refactor:` - Code refactoring
+- `docs:` - Documentation only
+- `test:` - Adding tests
+- `chore:` - Tooling, configs
+- `security:` - Security improvements
+
+### Handling Secrets and Sensitive Data
+
+**Never commit:**
+- API keys, tokens, passwords
+- `.env.local` files
+- Files with personal credentials
+
+**Best practices:**
+1. Create `.example` template files (`.env.example`, `.mcp.json.example`)
+2. Add real files to `.gitignore`
+3. If accidentally committed, use `git filter-branch` to rewrite history:
+
+```bash
+# Remove file from all commits
+git filter-branch --force --index-filter \
+  'git rm --cached --ignore-unmatch .mcp.json' \
+  --prune-empty --tag-name-filter cat -- --all
+
+# Clean up refs
+git for-each-ref --format='%(refname)' refs/original/ | \
+  xargs -n 1 git update-ref -d
+
+# Garbage collect
+git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+```
+
+**Files to always gitignore:**
+- `.env`, `.env.local` (env vars with secrets)
+- `.mcp.json` (MCP server configs with tokens)
+- `/.clerk/` (Clerk config directory)
+- `/.claude/` (Claude Code plans/cache)
+
+### When to Commit
+
+Commit when you've completed a logical unit of work:
+
+✅ **Good times to commit:**
+- Finished implementing a complete feature
+- Added all files for a specific layer (schema, routes, etc.)
+- Fixed a bug and added tests
+- Completed a refactoring
+
+❌ **Avoid committing:**
+- Work-in-progress / broken code
+- Half-implemented features
+- Commented-out code
+- Debug console.logs
+
+### Multiple Files Per Commit
+
+Group related files together:
+
+```bash
+# Database layer
+git add drizzle.config.ts src/lib/db/
+git commit -m "feat: implement database schema with Drizzle ORM"
+
+# Authentication
+git add src/middleware.ts src/app/(auth)/ src/app/api/webhooks/clerk/
+git commit -m "feat: implement Clerk authentication"
+```
+
 ## Domain Context
 
 ### Users
