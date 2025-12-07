@@ -7,6 +7,8 @@
 - **Auth**: Clerk (passkeys + 2FA)
 - **Deployment**: SST v3 → AWS Lambda
 - **NEVER start servers** - user controls all processes
+- **Git** - always do git commits after finishing a unit of work 
+- **Database** - let the user perform migrations
 
 ## Project Overview
 Mobile-first web application for divorced families to manage child visitation schedules. Built with modern React/Next.js stack, serverless AWS backend, and emphasis on security for sensitive family data.

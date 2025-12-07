@@ -37,6 +37,13 @@ const childSchema = z.object({
 
 type ChildFormInput = z.infer<typeof childSchema>;
 
+type Child = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+};
+
 export default function ChildrenPage() {
   const { toast } = useToast();
   const utils = trpc.useUtils();
@@ -116,7 +123,7 @@ export default function ChildrenPage() {
     setDialogOpen(true);
   };
 
-  const handleEdit = (child: any) => {
+  const handleEdit = (child: Child) => {
     setEditingChildId(child.id);
     form.reset({
       firstName: child.firstName,

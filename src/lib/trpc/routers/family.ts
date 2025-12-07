@@ -114,12 +114,16 @@ export const familyRouter = router({
         });
       }
 
+      // Determine edit permissions - parents get edit access by default
+      const shouldAllowEdit = input.canEditSchedule ??
+        (input.role === 'parent_1' || input.role === 'parent_2');
+
       // Add member
       const [member] = await db.insert(familyMembers).values({
         familyId,
         userId: user.id,
         role: input.role,
-        canEditSchedule: input.canEditSchedule,
+        canEditSchedule: shouldAllowEdit,
       }).returning();
 
       // Log member addition
@@ -132,7 +136,7 @@ export const familyRouter = router({
         newData: {
           userId: user.id,
           role: input.role,
-          canEditSchedule: input.canEditSchedule,
+          canEditSchedule: shouldAllowEdit,
         },
       });
 

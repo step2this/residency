@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useUser } from '@clerk/nextjs';
 import { trpc } from '@/lib/trpc/provider';
 import { Button } from '@/components/ui/button';
 import {
@@ -57,7 +58,7 @@ type EventDialogProps = {
 export function EventDialog({ open, onOpenChange, eventId, defaultDate }: EventDialogProps) {
   const { toast } = useToast();
   const utils = trpc.useUtils();
-  const [eventData, setEventData] = useState<any>(null);
+  const { user } = useUser();
 
   // Fetch children for selection
   const { data: children = [] } = trpc.child.list.useQuery();
@@ -65,8 +66,8 @@ export function EventDialog({ open, onOpenChange, eventId, defaultDate }: EventD
   // Fetch family to get current user's member info
   const { data: family } = trpc.family.get.useQuery();
 
-  // Find current user's family member ID
-  const currentUserMember = family?.members.find((m) => m.role === 'parent_1' || m.role === 'parent_2');
+  // Find current user's family member record (must match their Clerk userId)
+  const currentUserMember = family?.members.find((m) => m.userId === user?.id);
 
   // Fetch all events to find the one being edited (workaround since no get endpoint)
   const { data: allEvents = [] } = trpc.schedule.list.useQuery(
@@ -172,7 +173,7 @@ export function EventDialog({ open, onOpenChange, eventId, defaultDate }: EventD
 
     const payload = {
       childId: data.childId,
-      parentId: currentUserMember.id,
+      parentId: currentUserMember.userId,
       startTime: new Date(data.startTime),
       endTime: new Date(data.endTime),
       notes: data.notes || undefined,
