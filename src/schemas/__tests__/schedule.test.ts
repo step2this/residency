@@ -194,10 +194,11 @@ describe('createVisitationEventSchema', () => {
       }
     });
 
-    it('should reject invalid parent UUID', () => {
+    it('should reject empty parent ID', () => {
+      // parentId uses Clerk user IDs (not UUIDs), but must be non-empty
       const result = createVisitationEventSchema.safeParse({
         ...validEvent,
-        parentId: 'not-a-uuid',
+        parentId: '',
       });
       expect(result.success).toBe(false);
     });

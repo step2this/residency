@@ -16,7 +16,7 @@ export type RecurrenceRule = z.infer<typeof recurrenceRuleSchema>;
 // Create visitation event schema
 export const createVisitationEventSchema = z.object({
   childId: z.string().uuid('Invalid child ID'),
-  parentId: z.string().uuid('Invalid parent ID'),
+  parentId: z.string().min(1, 'Parent ID is required'), // Clerk user IDs are not UUIDs
   startTime: z.coerce.date({
     required_error: 'Start time is required',
     invalid_type_error: 'Invalid start time',
@@ -49,7 +49,7 @@ export type CreateVisitationEventInput = z.infer<typeof createVisitationEventSch
 export const updateVisitationEventSchema = z.object({
   id: z.string().uuid('Invalid event ID'),
   childId: z.string().uuid().optional(),
-  parentId: z.string().uuid().optional(),
+  parentId: z.string().min(1).optional(), // Clerk user IDs are not UUIDs
   startTime: z.coerce.date().optional(),
   endTime: z.coerce.date().optional(),
   isRecurring: z.boolean().optional(),
