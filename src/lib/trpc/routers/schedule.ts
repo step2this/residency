@@ -6,15 +6,66 @@ import {
   listVisitationEventsSchema,
 } from '@/schemas/schedule';
 import { visitationEvents, auditLogs } from '@/lib/db/schema';
-import { eq, and, gte, lte } from 'drizzle-orm';
+import { type Database } from '@/lib/db/client';
+import { eq, and, gte, lte, lt, gt, ne } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
+import { assertCanEdit, validateChildInFamily, validateParentInFamily } from '../helpers';
+
+// Helper function to check for overlapping events for a child
+async function checkForOverlappingEvents(
+  db: Database,
+  childId: string,
+  startTime: Date,
+  endTime: Date,
+  excludeEventId?: string
+): Promise<{ hasOverlap: boolean; overlappingEvent?: typeof visitationEvents.$inferSelect }> {
+  // Two time ranges overlap if: start1 < end2 AND start2 < end1
+  const conditions = [
+    eq(visitationEvents.childId, childId),
+    lt(visitationEvents.startTime, endTime),
+    gt(visitationEvents.endTime, startTime),
+  ];
+
+  // Exclude the current event when updating
+  if (excludeEventId) {
+    conditions.push(ne(visitationEvents.id, excludeEventId));
+  }
+
+  const overlappingEvent = await db.query.visitationEvents.findFirst({
+    where: and(...conditions),
+  });
+
+  return {
+    hasOverlap: !!overlappingEvent,
+    overlappingEvent: overlappingEvent ?? undefined,
+  };
+}
 
 export const scheduleRouter = router({
   // Create a new visitation event
   create: familyProcedure
     .input(createVisitationEventSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, familyId, userId } = ctx;
+      const { db, familyId, userId, canEdit } = ctx;
+
+      assertCanEdit(canEdit, 'modify the schedule');
+      await validateChildInFamily(db, input.childId, familyId);
+      await validateParentInFamily(db, input.parentId, familyId);
+
+      // Check for overlapping events for this child
+      const { hasOverlap, overlappingEvent } = await checkForOverlappingEvents(
+        db,
+        input.childId,
+        input.startTime,
+        input.endTime
+      );
+
+      if (hasOverlap && overlappingEvent) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: `Schedule conflict: This child already has a visitation event from ${overlappingEvent.startTime.toLocaleString()} to ${overlappingEvent.endTime.toLocaleString()}`,
+        });
+      }
 
       // Create event
       const [event] = await db.insert(visitationEvents).values({
@@ -84,7 +135,9 @@ export const scheduleRouter = router({
   update: familyProcedure
     .input(updateVisitationEventSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, familyId, userId } = ctx;
+      const { db, familyId, userId, canEdit } = ctx;
+
+      assertCanEdit(canEdit, 'modify the schedule');
 
       // Get existing event
       const existingEvent = await db.query.visitationEvents.findFirst({
@@ -96,6 +149,44 @@ export const scheduleRouter = router({
           code: 'NOT_FOUND',
           message: 'Visitation event not found',
         });
+      }
+
+      // Validate childId if provided
+      if (input.childId) {
+        await validateChildInFamily(db, input.childId, familyId);
+      }
+
+      // Validate parentId if provided
+      if (input.parentId) {
+        await validateParentInFamily(db, input.parentId, familyId);
+      }
+
+      // Check for overlapping events if time or child is changing
+      const newChildId = input.childId ?? existingEvent.childId;
+      const newStartTime = input.startTime ?? existingEvent.startTime;
+      const newEndTime = input.endTime ?? existingEvent.endTime;
+
+      // Only check if something relevant is actually changing
+      const isTimeOrChildChanging =
+        newChildId !== existingEvent.childId ||
+        newStartTime.getTime() !== existingEvent.startTime.getTime() ||
+        newEndTime.getTime() !== existingEvent.endTime.getTime();
+
+      if (isTimeOrChildChanging) {
+        const { hasOverlap, overlappingEvent } = await checkForOverlappingEvents(
+          db,
+          newChildId,
+          newStartTime,
+          newEndTime,
+          input.id // Exclude the current event being updated
+        );
+
+        if (hasOverlap && overlappingEvent) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: `Schedule conflict: This child already has a visitation event from ${overlappingEvent.startTime.toLocaleString()} to ${overlappingEvent.endTime.toLocaleString()}`,
+          });
+        }
       }
 
       const oldData = {
@@ -152,7 +243,9 @@ export const scheduleRouter = router({
   delete: familyProcedure
     .input(deleteVisitationEventSchema)
     .mutation(async ({ ctx, input }) => {
-      const { db, familyId, userId } = ctx;
+      const { db, familyId, userId, canEdit } = ctx;
+
+      assertCanEdit(canEdit, 'modify the schedule');
 
       // Get event to delete
       const event = await db.query.visitationEvents.findFirst({

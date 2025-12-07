@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useUser } from '@clerk/nextjs';
 import { trpc } from '@/lib/trpc/provider';
+import { DEFAULT_EVENT_QUERY_DAYS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -53,8 +55,10 @@ type SwapRequestFormInput = z.infer<typeof swapRequestSchema>;
 export default function SwapsPage() {
   const { toast } = useToast();
   const utils = trpc.useUtils();
+  const { user } = useUser();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const currentUserId = user?.id;
 
   // Fetch swap requests
   const { data: swaps = [], isLoading } = trpc.swap.list.useQuery(
@@ -64,7 +68,7 @@ export default function SwapsPage() {
   // Fetch events for the dropdown
   const { data: events = [] } = trpc.schedule.list.useQuery({
     startDate: new Date(),
-    endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // Next 90 days
+    endDate: new Date(Date.now() + DEFAULT_EVENT_QUERY_DAYS * 24 * 60 * 60 * 1000),
   });
 
   const form = useForm<SwapRequestFormInput>({
@@ -176,7 +180,7 @@ export default function SwapsPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, any> = {
+    const variants: Record<string, 'default' | 'destructive' | 'secondary' | 'outline'> = {
       pending: 'default',
       approved: 'default',
       rejected: 'destructive',
@@ -253,73 +257,86 @@ export default function SwapsPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {swaps.map((swap: any) => (
-            <Card key={swap.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">
-                    Event with {swap.event.child.firstName}
-                  </CardTitle>
-                  {getStatusBadge(swap.status)}
-                </div>
-                <CardDescription>
-                  Requested by {swap.requestedBy.firstName || 'Co-parent'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-2">
-                  <div>
-                    <p className="text-sm font-medium">Original Time:</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(swap.event.startTime).toLocaleString()} -{' '}
-                      {new Date(swap.event.endTime).toLocaleString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Proposed Time:</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(swap.newStartTime).toLocaleString()} -{' '}
-                      {new Date(swap.newEndTime).toLocaleString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Reason:</p>
-                    <p className="text-sm text-muted-foreground">{swap.reason}</p>
-                  </div>
-                </div>
+          {swaps.map((swap) => {
+            const isRecipient = swap.requestedTo === currentUserId;
+            const isRequester = swap.requestedBy === currentUserId;
 
-                {swap.status === 'pending' && (
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => handleApprove(swap.id)}
-                      disabled={approveSwap.isPending}
-                    >
-                      <Check className="mr-2 h-4 w-4" />
-                      Approve
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleReject(swap.id)}
-                      disabled={rejectSwap.isPending}
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Reject
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleCancel(swap.id)}
-                      disabled={cancelSwap.isPending}
-                    >
-                      Cancel
-                    </Button>
+            return (
+              <Card key={swap.id}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">
+                      Event with {swap.event.child.firstName}
+                    </CardTitle>
+                    {getStatusBadge(swap.status)}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                  <CardDescription>
+                    Requested by {swap.requester?.firstName || 'Co-parent'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-2">
+                    <div>
+                      <p className="text-sm font-medium">Original Time:</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(swap.event.startTime).toLocaleString()} -{' '}
+                        {new Date(swap.event.endTime).toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Proposed Time:</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(swap.newStartTime).toLocaleString()} -{' '}
+                        {new Date(swap.newEndTime).toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Reason:</p>
+                      <p className="text-sm text-muted-foreground">{swap.reason}</p>
+                    </div>
+                  </div>
+
+                  {swap.status === 'pending' && (
+                    <div className="flex gap-2">
+                      {/* Only recipient can approve/reject */}
+                      {isRecipient && (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => handleApprove(swap.id)}
+                            disabled={approveSwap.isPending}
+                          >
+                            <Check className="mr-2 h-4 w-4" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleReject(swap.id)}
+                            disabled={rejectSwap.isPending}
+                          >
+                            <X className="mr-2 h-4 w-4" />
+                            Reject
+                          </Button>
+                        </>
+                      )}
+                      {/* Only requester can cancel */}
+                      {isRequester && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleCancel(swap.id)}
+                          disabled={cancelSwap.isPending}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 

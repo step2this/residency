@@ -9,6 +9,7 @@ import {
 import { swapRequests, visitationEvents, auditLogs } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
+import { assertCanEdit, assertSwapPending } from '../helpers';
 
 export const swapRouter = router({
   // Create a new swap request
@@ -29,7 +30,12 @@ export const swapRouter = router({
         });
       }
 
-      // Determine who the request is to (the other parent)
+      // Verify user has edit permissions (only parents can create swap requests)
+      const { canEdit } = ctx;
+      assertCanEdit(canEdit, 'create swap requests');
+
+      // Determine who the request is to (the event's assigned parent)
+      // If requester is the event owner, send to creator; otherwise send to event owner
       const requestedTo = event.parentId === userId
         ? event.createdBy  // If current user owns event, request to creator
         : event.parentId;  // Otherwise request to event owner
@@ -130,13 +136,7 @@ export const swapRouter = router({
         });
       }
 
-      // Verify swap is still pending
-      if (swap.status !== 'pending') {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Swap request is already ${swap.status}`,
-        });
-      }
+      assertSwapPending(swap.status);
 
       // Update swap status
       const [approvedSwap] = await db
@@ -158,6 +158,25 @@ export const swapRouter = router({
           updatedAt: new Date(),
         })
         .where(eq(visitationEvents.id, swap.eventId));
+
+      // Log schedule change (for legal audit trail)
+      await db.insert(auditLogs).values({
+        familyId,
+        userId,
+        action: 'schedule.update',
+        entityType: 'visitation_event',
+        entityId: swap.eventId,
+        oldData: {
+          startTime: swap.event.startTime,
+          endTime: swap.event.endTime,
+        },
+        newData: {
+          startTime: swap.newStartTime,
+          endTime: swap.newEndTime,
+          reason: 'Swap request approved',
+          swapRequestId: input.id,
+        },
+      });
 
       // Log swap approval
       await db.insert(auditLogs).values({
@@ -199,13 +218,7 @@ export const swapRouter = router({
         });
       }
 
-      // Verify swap is still pending
-      if (swap.status !== 'pending') {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Swap request is already ${swap.status}`,
-        });
-      }
+      assertSwapPending(swap.status);
 
       // Update swap status
       const [rejectedSwap] = await db
@@ -258,13 +271,7 @@ export const swapRouter = router({
         });
       }
 
-      // Verify swap is still pending
-      if (swap.status !== 'pending') {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Swap request is already ${swap.status}`,
-        });
-      }
+      assertSwapPending(swap.status);
 
       // Update swap status
       const [cancelledSwap] = await db
