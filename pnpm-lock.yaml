@@ -79,7 +79,7 @@ importers:
         version: 4.1.0
       drizzle-orm:
         specifier: ^0.37.0
-        version: 0.37.0(@neondatabase/serverless@1.0.2)(@types/pg@8.15.6)(@types/react@19.2.7)(postgres@3.4.7)(react@19.2.1)
+        version: 0.37.0(@electric-sql/pglite@0.3.14)(@neondatabase/serverless@1.0.2)(@types/pg@8.15.6)(@types/react@19.2.7)(postgres@3.4.7)(react@19.2.1)
       lucide-react:
         specifier: ^0.556.0
         version: 0.556.0(react@19.2.1)
@@ -123,6 +123,9 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.3.14
+        version: 0.3.14
       '@playwright/test':
         specifier: ^1.49.1
         version: 1.57.0
@@ -377,6 +380,9 @@ packages:
 
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
+
+  '@electric-sql/pglite@0.3.14':
+    resolution: {integrity: sha512-3DB258dhqdsArOI1fIt7cb9RpUOgcDg5hXWVgVHAeqVQ/qxtFy605QKs4gx6mFq3jWsSPqDN8TgSEsqC3OfV9Q==}
 
   '@emnapi/core@1.7.1':
     resolution: {integrity: sha512-o1uhUASyo921r2XtHYOHy7gdkGLge8ghBEQHMWmyJFoXlpU58kIrhhN3w26lpQb6dspetweapMn2CSNwQ8I4wg==}
@@ -4368,6 +4374,8 @@ snapshots:
 
   '@drizzle-team/brocli@0.10.2': {}
 
+  '@electric-sql/pglite@0.3.14': {}
+
   '@emnapi/core@1.7.1':
     dependencies:
       '@emnapi/wasi-threads': 1.1.0
@@ -6096,8 +6104,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.37.0(@neondatabase/serverless@1.0.2)(@types/pg@8.15.6)(@types/react@19.2.7)(postgres@3.4.7)(react@19.2.1):
+  drizzle-orm@0.37.0(@electric-sql/pglite@0.3.14)(@neondatabase/serverless@1.0.2)(@types/pg@8.15.6)(@types/react@19.2.7)(postgres@3.4.7)(react@19.2.1):
     optionalDependencies:
+      '@electric-sql/pglite': 0.3.14
       '@neondatabase/serverless': 1.0.2
       '@types/pg': 8.15.6
       '@types/react': 19.2.7
