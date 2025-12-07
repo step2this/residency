@@ -37,6 +37,13 @@ export const notificationTypeEnum = pgEnum('notification_type', [
   'pickup_reminder',
 ]);
 
+export const invitationStatusEnum = pgEnum('invitation_status', [
+  'pending',
+  'accepted',
+  'expired',
+  'revoked',
+]);
+
 // ============================================================================
 // TABLES
 // ============================================================================
@@ -170,6 +177,7 @@ export const swapRequests = pgTable(
     familyIdIdx: index('swap_requests_family_id_idx').on(table.familyId),
     eventIdIdx: index('swap_requests_event_id_idx').on(table.eventId),
     statusIdx: index('swap_requests_status_idx').on(table.status),
+    requestedByIdx: index('swap_requests_requested_by_idx').on(table.requestedBy),
     requestedToIdx: index('swap_requests_requested_to_idx').on(table.requestedTo),
   })
 );
@@ -227,6 +235,35 @@ export const notifications = pgTable(
   })
 );
 
+// Family invitations table (token-based invites for co-parents)
+export const familyInvitations = pgTable(
+  'family_invitations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => families.id, { onDelete: 'cascade' }),
+    invitedBy: varchar('invited_by', { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    email: varchar('email', { length: 255 }), // null for link-only invites
+    token: varchar('token', { length: 64 }).notNull().unique(),
+    role: familyMemberRoleEnum('role').notNull(),
+    canEditSchedule: boolean('can_edit_schedule').notNull().default(false),
+    status: invitationStatusEnum('status').notNull().default('pending'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    acceptedBy: varchar('accepted_by', { length: 255 }).references(() => users.id),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    familyIdIdx: index('family_invitations_family_id_idx').on(table.familyId),
+    tokenIdx: index('family_invitations_token_idx').on(table.token),
+    emailIdx: index('family_invitations_email_idx').on(table.email),
+    statusIdx: index('family_invitations_status_idx').on(table.status),
+  })
+);
+
 // ============================================================================
 // RELATIONS
 // ============================================================================
@@ -238,6 +275,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   swapRequestsReceived: many(swapRequests, { relationName: 'requestedTo' }),
   auditLogs: many(auditLogs),
   notifications: many(notifications),
+  invitationsSent: many(familyInvitations, { relationName: 'invitedBy' }),
+  invitationsAccepted: many(familyInvitations, { relationName: 'acceptedBy' }),
 }));
 
 export const familiesRelations = relations(families, ({ many }) => ({
@@ -247,6 +286,7 @@ export const familiesRelations = relations(families, ({ many }) => ({
   swapRequests: many(swapRequests),
   auditLogs: many(auditLogs),
   notifications: many(notifications),
+  invitations: many(familyInvitations),
 }));
 
 export const familyMembersRelations = relations(familyMembers, ({ one }) => ({
@@ -328,5 +368,22 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   family: one(families, {
     fields: [notifications.familyId],
     references: [families.id],
+  }),
+}));
+
+export const familyInvitationsRelations = relations(familyInvitations, ({ one }) => ({
+  family: one(families, {
+    fields: [familyInvitations.familyId],
+    references: [families.id],
+  }),
+  inviter: one(users, {
+    fields: [familyInvitations.invitedBy],
+    references: [users.id],
+    relationName: 'invitedBy',
+  }),
+  acceptor: one(users, {
+    fields: [familyInvitations.acceptedBy],
+    references: [users.id],
+    relationName: 'acceptedBy',
   }),
 }));

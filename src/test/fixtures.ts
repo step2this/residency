@@ -13,7 +13,9 @@ import {
   children,
   visitationEvents,
   swapRequests,
+  familyInvitations,
 } from '@/lib/db/schema';
+import { randomBytes } from 'crypto';
 
 // Counter for unique IDs
 let idCounter = 0;
@@ -207,4 +209,33 @@ export async function createTestFamilySetup() {
     member2,
     child,
   };
+}
+
+/**
+ * Create a family invitation
+ */
+export async function createInvitation(
+  overrides: Partial<typeof familyInvitations.$inferInsert> & {
+    familyId: string;
+    invitedBy: string;
+  }
+) {
+  const db = getTestDatabase();
+  const token = overrides.token ?? randomBytes(32).toString('hex');
+  const expiresAt = overrides.expiresAt ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+  const [invitation] = await db
+    .insert(familyInvitations)
+    .values({
+      token,
+      expiresAt,
+      role: overrides.role ?? 'parent_2',
+      canEditSchedule: overrides.canEditSchedule ?? false,
+      status: overrides.status ?? 'pending',
+      email: overrides.email ?? null,
+      ...overrides,
+    })
+    .returning();
+
+  return invitation!;
 }

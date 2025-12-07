@@ -42,6 +42,12 @@ export async function createTestDatabase(): Promise<TestDatabase> {
     EXCEPTION
       WHEN duplicate_object THEN null;
     END $$;
+
+    DO $$ BEGIN
+      CREATE TYPE invitation_status AS ENUM ('pending', 'accepted', 'expired', 'revoked');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
   `);
 
   // Create tables
@@ -139,6 +145,21 @@ export async function createTestDatabase(): Promise<TestDatabase> {
       read_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS family_invitations (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      family_id UUID NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+      invited_by VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      email VARCHAR(255),
+      token VARCHAR(64) NOT NULL UNIQUE,
+      role family_member_role NOT NULL,
+      can_edit_schedule BOOLEAN NOT NULL DEFAULT false,
+      status invitation_status NOT NULL DEFAULT 'pending',
+      expires_at TIMESTAMPTZ NOT NULL,
+      accepted_by VARCHAR(255) REFERENCES users(id),
+      accepted_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
 
   return testDb;
@@ -174,6 +195,7 @@ export async function clearTestDatabase(): Promise<void> {
   if (!pgliteInstance) return;
 
   await pgliteInstance.exec(`
+    TRUNCATE TABLE family_invitations CASCADE;
     TRUNCATE TABLE notifications CASCADE;
     TRUNCATE TABLE audit_logs CASCADE;
     TRUNCATE TABLE swap_requests CASCADE;
