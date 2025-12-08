@@ -1,8 +1,5 @@
 'use client';
 
-// CRITICAL: Import Temporal polyfill FIRST (before any Schedule-X imports)
-import '@js-temporal/polyfill';
-
 import { useState } from 'react';
 import { parseAsString, useQueryState } from 'nuqs';
 import { ScheduleCalendar } from '@/components/calendar/schedule-calendar';

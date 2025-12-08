@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
 
+  // Enable instrumentation for loading critical polyfills first
+  instrumentationHook: true,
+
   // Security headers
   async headers() {
     return [
