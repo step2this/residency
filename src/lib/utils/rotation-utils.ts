@@ -115,7 +115,7 @@ export function generateCalendarEvents(
     return [];
   }
 
-  let currentDate = new Date(startDate);
+  const currentDate = new Date(startDate);
 
   while (currentDate <= endDate) {
     // Calculate which day of the cycle we're on

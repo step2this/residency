@@ -6,9 +6,10 @@
 - **ORM**: Drizzle (never Prisma)
 - **Auth**: Clerk (passkeys + 2FA)
 - **Deployment**: SST v3 → AWS Lambda
-- **NEVER start servers** - user controls all processes
+- **NEVER start servers** - user controls all processes, always run pnpm test with --run and never run watch mode
 - **Git** - always do git commits after finishing a unit of work 
 - **Database** - let the user perform migrations
+- **Code** - Always be type safe, keep code DRY, follow SOLID principles
 
 ## Project Overview
 Mobile-first web application for divorced families to manage child visitation schedules. Built with modern React/Next.js stack, serverless AWS backend, and emphasis on security for sensitive family data.
@@ -104,7 +105,8 @@ Mobile-first web application for divorced families to manage child visitation sc
 pnpm dev                       # Start dev server
 pnpm build                     # Production build
 pnpm typecheck                 # Run TypeScript checks
-pnpm lint                      # ESLint
+pnpm lint                      # ESLint (check for issues)
+pnpm lint:fix                  # ESLint (auto-fix issues)
 pnpm test                      # Run tests
 
 # Database
@@ -119,9 +121,22 @@ pnpm sst:deploy                # Deploy to AWS
 
 ## Code Style
 
+### ESLint Configuration
+- **Format**: Flat config (`eslint.config.js`) - required for ESLint 9
+- **Plugins**: TypeScript, React, Next.js, accessibility
+- **Key Rules**:
+  - Unused vars must start with `_` (e.g., `_unused`)
+  - Prefer `type` imports for type-only imports
+  - No `console.log` (use `console.warn` or `console.error`)
+  - Prefer template literals over string concatenation
+  - React hooks exhaustive-deps warnings enabled
+- **Auto-fix**: Run `pnpm lint:fix` to auto-fix 8+ common issues
+- **Test files**: More relaxed rules (allow `any`, `console.log`)
+- **Config files**: Allow `require()` and anonymous exports
+
 ### TypeScript
 - Strict mode enabled
-- No `any` types - use `unknown` and narrow
+- No `any` types - use `unknown` and narrow (exception: tests and explicit cases)
 - Prefer `type` over `interface` for consistency
 - Use Zod for runtime validation, infer types from schemas
 
