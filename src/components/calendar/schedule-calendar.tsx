@@ -1,7 +1,7 @@
 'use client';
 
-// Note: Temporal polyfill is loaded via src/instrumentation.ts (Next.js hook)
-// This ensures it's available before Schedule-X module evaluation
+// Load Temporal polyfill FIRST - must be before Schedule-X imports
+import '@/lib/polyfills/temporal';
 
 import { useCallback, useMemo } from 'react';
 import { ScheduleXCalendar, useCalendarApp } from '@schedule-x/react';
