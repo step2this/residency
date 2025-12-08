@@ -1,7 +1,6 @@
 'use client';
 
-// Import Temporal polyfill first (required for Schedule-X v3)
-import '@js-temporal/polyfill';
+// Note: Temporal polyfill is loaded globally in @/lib/polyfills
 
 import { useCallback, useMemo } from 'react';
 import { ScheduleXCalendar, useCalendarApp } from '@schedule-x/react';

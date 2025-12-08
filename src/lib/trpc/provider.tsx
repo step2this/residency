@@ -1,10 +1,13 @@
 'use client';
 
+// Load polyfills FIRST (before any other imports that might need them)
+import '@/lib/polyfills';
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpBatchLink } from '@trpc/client';
 import { createTRPCReact } from '@trpc/react-query';
 import { useState } from 'react';
-import { type AppRouter } from './routers';
+import type { AppRouter } from './routers';
 import superjson from 'superjson';
 
 export const trpc = createTRPCReact<AppRouter>();
