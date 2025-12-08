@@ -44,6 +44,14 @@ export const invitationStatusEnum = pgEnum('invitation_status', [
   'revoked',
 ]);
 
+export const rotationPatternTypeEnum = pgEnum('rotation_pattern_type', [
+  '2-2-3',
+  '2-2-5-5',
+  '3-4-4-3',
+  'alternating-weeks',
+  'every-weekend',
+]);
+
 // ============================================================================
 // TABLES
 // ============================================================================
@@ -264,6 +272,38 @@ export const familyInvitations = pgTable(
   })
 );
 
+// Rotation patterns table (preset custody schedules)
+export const rotationPatterns = pgTable(
+  'rotation_patterns',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => families.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 255 }).notNull(),
+    patternType: rotationPatternTypeEnum('pattern_type').notNull(),
+    startDate: date('start_date').notNull(),
+    endDate: date('end_date'),
+    primaryParentId: varchar('primary_parent_id', { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    secondaryParentId: varchar('secondary_parent_id', { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    isActive: boolean('is_active').notNull().default(true),
+    createdBy: varchar('created_by', { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    familyIdIdx: index('rotation_patterns_family_id_idx').on(table.familyId),
+    startDateIdx: index('rotation_patterns_start_date_idx').on(table.startDate),
+    isActiveIdx: index('rotation_patterns_is_active_idx').on(table.isActive),
+  })
+);
+
 // ============================================================================
 // RELATIONS
 // ============================================================================
@@ -277,6 +317,9 @@ export const usersRelations = relations(users, ({ many }) => ({
   notifications: many(notifications),
   invitationsSent: many(familyInvitations, { relationName: 'invitedBy' }),
   invitationsAccepted: many(familyInvitations, { relationName: 'acceptedBy' }),
+  rotationPatternsAsPrimary: many(rotationPatterns, { relationName: 'primaryParent' }),
+  rotationPatternsAsSecondary: many(rotationPatterns, { relationName: 'secondaryParent' }),
+  rotationPatternsCreated: many(rotationPatterns, { relationName: 'createdBy' }),
 }));
 
 export const familiesRelations = relations(families, ({ many }) => ({
@@ -287,6 +330,7 @@ export const familiesRelations = relations(families, ({ many }) => ({
   auditLogs: many(auditLogs),
   notifications: many(notifications),
   invitations: many(familyInvitations),
+  rotationPatterns: many(rotationPatterns),
 }));
 
 export const familyMembersRelations = relations(familyMembers, ({ one }) => ({
@@ -385,5 +429,27 @@ export const familyInvitationsRelations = relations(familyInvitations, ({ one })
     fields: [familyInvitations.acceptedBy],
     references: [users.id],
     relationName: 'acceptedBy',
+  }),
+}));
+
+export const rotationPatternsRelations = relations(rotationPatterns, ({ one }) => ({
+  family: one(families, {
+    fields: [rotationPatterns.familyId],
+    references: [families.id],
+  }),
+  primaryParent: one(users, {
+    fields: [rotationPatterns.primaryParentId],
+    references: [users.id],
+    relationName: 'primaryParent',
+  }),
+  secondaryParent: one(users, {
+    fields: [rotationPatterns.secondaryParentId],
+    references: [users.id],
+    relationName: 'secondaryParent',
+  }),
+  creator: one(users, {
+    fields: [rotationPatterns.createdBy],
+    references: [users.id],
+    relationName: 'createdBy',
   }),
 }));

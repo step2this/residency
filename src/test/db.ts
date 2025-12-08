@@ -48,6 +48,12 @@ export async function createTestDatabase(): Promise<TestDatabase> {
     EXCEPTION
       WHEN duplicate_object THEN null;
     END $$;
+
+    DO $$ BEGIN
+      CREATE TYPE rotation_pattern_type AS ENUM ('2-2-3', '2-2-5-5', '3-4-4-3', 'alternating-weeks', 'every-weekend');
+    EXCEPTION
+      WHEN duplicate_object THEN null;
+    END $$;
   `);
 
   // Create tables
@@ -160,6 +166,23 @@ export async function createTestDatabase(): Promise<TestDatabase> {
       accepted_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS rotation_patterns (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      family_id UUID NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      pattern_type rotation_pattern_type NOT NULL,
+      start_date DATE NOT NULL,
+      end_date DATE,
+      primary_parent_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      secondary_parent_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      is_active BOOLEAN NOT NULL DEFAULT true,
+      created_by VARCHAR(255) NOT NULL REFERENCES users(id),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CHECK (end_date IS NULL OR end_date > start_date),
+      CHECK (primary_parent_id != secondary_parent_id)
+    );
   `);
 
   return testDb;
@@ -195,6 +218,7 @@ export async function clearTestDatabase(): Promise<void> {
   if (!pgliteInstance) return;
 
   await pgliteInstance.exec(`
+    TRUNCATE TABLE rotation_patterns CASCADE;
     TRUNCATE TABLE family_invitations CASCADE;
     TRUNCATE TABLE notifications CASCADE;
     TRUNCATE TABLE audit_logs CASCADE;
