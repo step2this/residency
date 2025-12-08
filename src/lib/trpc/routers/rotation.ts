@@ -5,7 +5,7 @@ import {
   deleteRotationPatternSchema,
 } from '@/schemas/rotation';
 import { rotationPatterns, familyMembers } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { validateNoOverlap, generateCalendarEvents } from '@/lib/utils/rotation-utils';
 
@@ -123,8 +123,7 @@ export const rotationRouter = router({
     const rotations = await db.query.rotationPatterns.findMany({
       where: and(
         eq(rotationPatterns.isActive, true),
-        // Filter by family IDs using OR
-        ...familyIds.map((id) => eq(rotationPatterns.familyId, id))
+        inArray(rotationPatterns.familyId, familyIds)
       ),
       with: {
         family: true,
@@ -133,8 +132,7 @@ export const rotationRouter = router({
       },
     });
 
-    // Additional filter in JS to ensure only user's families
-    return rotations.filter((r) => familyIds.includes(r.familyId));
+    return rotations;
   }),
 
   /**
