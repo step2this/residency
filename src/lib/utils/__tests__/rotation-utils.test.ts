@@ -370,5 +370,92 @@ describe('rotation-utils', () => {
 
       expect(hasOverlap).toBe(true);
     });
+
+    it('should detect overlap when new rotation has no end date and existing rotation exists', async () => {
+      const db = (await import('@/test/db')).getTestDatabase();
+      const { rotationPatterns } = await import('@/lib/db/schema');
+
+      const family = await createFamily();
+      const parent1 = await createUser({ firstName: 'Parent', lastName: 'One' });
+      const parent2 = await createUser({ firstName: 'Parent', lastName: 'Two' });
+
+      await createFamilyMember({ familyId: family.id, userId: parent1.id, role: 'parent_1' });
+      await createFamilyMember({ familyId: family.id, userId: parent2.id, role: 'parent_2' });
+
+      // Create existing rotation: Jan 1 - Jun 30
+      await db.insert(rotationPatterns).values({
+        familyId: family.id,
+        name: 'Existing Rotation',
+        patternType: '2-2-3',
+        startDate: '2024-01-01',
+        endDate: '2024-06-30',
+        primaryParentId: parent1.id,
+        secondaryParentId: parent2.id,
+        createdBy: parent1.id,
+      });
+
+      // Try to create new open-ended rotation (no end date) - should conflict
+      const hasOverlap = await validateNoOverlap(family.id, '2024-03-01', undefined, db);
+
+      expect(hasOverlap).toBe(true);
+    });
+
+    it('should detect overlap when existing rotation has no end date', async () => {
+      const db = (await import('@/test/db')).getTestDatabase();
+      const { rotationPatterns } = await import('@/lib/db/schema');
+
+      const family = await createFamily();
+      const parent1 = await createUser({ firstName: 'Parent', lastName: 'One' });
+      const parent2 = await createUser({ firstName: 'Parent', lastName: 'Two' });
+
+      await createFamilyMember({ familyId: family.id, userId: parent1.id, role: 'parent_1' });
+      await createFamilyMember({ familyId: family.id, userId: parent2.id, role: 'parent_2' });
+
+      // Create open-ended existing rotation starting Jan 1
+      await db.insert(rotationPatterns).values({
+        familyId: family.id,
+        name: 'Ongoing Rotation',
+        patternType: '2-2-3',
+        startDate: '2024-01-01',
+        endDate: null, // No end date - extends forever
+        primaryParentId: parent1.id,
+        secondaryParentId: parent2.id,
+        createdBy: parent1.id,
+      });
+
+      // Try to create any new rotation - should ALWAYS conflict with open-ended existing
+      const hasOverlap = await validateNoOverlap(family.id, '2026-01-01', '2026-12-31', db);
+
+      expect(hasOverlap).toBe(true);
+    });
+
+    it('should allow new rotation after existing closed-ended rotation completes', async () => {
+      const db = (await import('@/test/db')).getTestDatabase();
+      const { rotationPatterns } = await import('@/lib/db/schema');
+
+      const family = await createFamily();
+      const parent1 = await createUser({ firstName: 'Parent', lastName: 'One' });
+      const parent2 = await createUser({ firstName: 'Parent', lastName: 'Two' });
+
+      await createFamilyMember({ familyId: family.id, userId: parent1.id, role: 'parent_1' });
+      await createFamilyMember({ familyId: family.id, userId: parent2.id, role: 'parent_2' });
+
+      // Create existing rotation: Jan 1 - Mar 31
+      await db.insert(rotationPatterns).values({
+        familyId: family.id,
+        name: 'Q1 Rotation',
+        patternType: '2-2-3',
+        startDate: '2024-01-01',
+        endDate: '2024-03-31', // Ends March 31
+        primaryParentId: parent1.id,
+        secondaryParentId: parent2.id,
+        createdBy: parent1.id,
+      });
+
+      // Create new rotation starting April 1 (day after existing ends) - should NOT conflict
+      const hasOverlap = await validateNoOverlap(family.id, '2024-04-01', '2024-12-31', db);
+
+      expect(hasOverlap).toBe(false);
+    });
   });
 });

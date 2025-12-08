@@ -177,28 +177,31 @@ export async function validateNoOverlap(
     const existingStart = existing.startDate;
     const existingEnd = existing.endDate;
 
-    // Case 1: New rotation starts during existing rotation
-    if (startDate >= existingStart && (!existingEnd || startDate <= existingEnd)) {
+    // CRITICAL: If existing rotation has no end date, it extends forever
+    // Any new rotation will overlap with it
+    if (!existingEnd) {
       return true;
     }
 
-    // Case 2: New rotation ends during existing rotation (if new has end date)
-    if (endDate && endDate >= existingStart && (!existingEnd || endDate <= existingEnd)) {
+    // CRITICAL: If new rotation has no end date, it extends forever
+    // It will overlap with any existing rotation
+    if (!endDate) {
+      return true;
+    }
+
+    // Both rotations have end dates - check for specific overlaps
+    // Case 1: New rotation starts during existing rotation
+    if (startDate >= existingStart && startDate <= existingEnd) {
+      return true;
+    }
+
+    // Case 2: New rotation ends during existing rotation
+    if (endDate >= existingStart && endDate <= existingEnd) {
       return true;
     }
 
     // Case 3: New rotation completely contains existing rotation
-    if (endDate && startDate <= existingStart && endDate >= existingStart) {
-      return true;
-    }
-
-    // Case 4: Existing rotation completely contains new rotation
-    if (!endDate && existingEnd && existingEnd >= startDate) {
-      return true;
-    }
-
-    // Case 5: Both are open-ended and existing starts before or on new start
-    if (!endDate && !existingEnd && existingStart <= startDate) {
+    if (startDate <= existingStart && endDate >= existingEnd) {
       return true;
     }
   }
