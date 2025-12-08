@@ -10,8 +10,9 @@ import {
   jsonb,
   index,
   unique,
+  check,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 
 // ============================================================================
 // ENUMS
@@ -301,6 +302,18 @@ export const rotationPatterns = pgTable(
     familyIdIdx: index('rotation_patterns_family_id_idx').on(table.familyId),
     startDateIdx: index('rotation_patterns_start_date_idx').on(table.startDate),
     isActiveIdx: index('rotation_patterns_is_active_idx').on(table.isActive),
+    familyActiveIdx: index('rotation_patterns_family_active_idx').on(
+      table.familyId,
+      table.isActive
+    ),
+    dateOrderCheck: check(
+      'rotation_patterns_date_order_check',
+      sql`${table.endDate} IS NULL OR ${table.endDate} > ${table.startDate}`
+    ),
+    differentParentsCheck: check(
+      'rotation_patterns_different_parents_check',
+      sql`${table.primaryParentId} != ${table.secondaryParentId}`
+    ),
   })
 );
 
