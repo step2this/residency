@@ -2,8 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
 
-  // Enable instrumentation for loading critical polyfills first
-  instrumentationHook: true,
+  // Note: instrumentation.ts is automatically loaded by Next.js 15
+  // No configuration needed for the instrumentation hook
 
   // Security headers
   async headers() {
