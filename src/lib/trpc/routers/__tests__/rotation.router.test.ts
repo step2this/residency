@@ -203,7 +203,7 @@ describe('rotation router', () => {
           primaryParentId: parent1.id,
           secondaryParentId: parent2.id,
         })
-      ).rejects.toThrow('This rotation overlaps with an existing active rotation');
+      ).rejects.toThrow(/overlaps with an existing active rotation/);
     });
   });
 

@@ -47,21 +47,42 @@ export function RotationList({ rotations }: RotationListProps) {
   const utils = trpc.useUtils();
 
   const deleteMutation = trpc.rotation.delete.useMutation({
-    onSuccess: () => {
-      toast({
-        title: 'Rotation deleted',
-        description: 'The rotation pattern has been successfully removed.',
-      });
-      utils.rotation.list.invalidate();
-      setDeleteDialogOpen(false);
-      setRotationToDelete(null);
+    onMutate: async (variables) => {
+      // Cancel outgoing refetches to avoid overwriting optimistic update
+      await utils.rotation.list.cancel();
+
+      // Snapshot current value for rollback
+      const previousRotations = utils.rotation.list.getData();
+
+      // Optimistically update the cache
+      utils.rotation.list.setData(undefined, (old) =>
+        old?.filter((r) => r.id !== variables.rotationId)
+      );
+
+      return { previousRotations };
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      // Rollback on error
+      if (context?.previousRotations) {
+        utils.rotation.list.setData(undefined, context.previousRotations);
+      }
       toast({
         title: 'Error deleting rotation',
         description: error.message,
         variant: 'destructive',
       });
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Rotation deleted',
+        description: 'The rotation pattern has been successfully removed.',
+      });
+      setDeleteDialogOpen(false);
+      setRotationToDelete(null);
+    },
+    onSettled: () => {
+      // Refetch to ensure cache is in sync with server
+      utils.rotation.list.invalidate();
     },
   });
 

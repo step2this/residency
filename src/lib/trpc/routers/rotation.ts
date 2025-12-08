@@ -21,15 +21,21 @@ export const rotationRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { db, userId } = ctx;
 
-      // Get user's family membership
-      const membership = await db.query.familyMembers.findFirst({
+      // Batch fetch all relevant memberships in a single query
+      const memberships = await db.query.familyMembers.findMany({
         where: and(
           eq(familyMembers.familyId, input.familyId),
-          eq(familyMembers.userId, userId)
+          inArray(familyMembers.userId, [userId, input.primaryParentId, input.secondaryParentId])
         ),
       });
 
-      if (!membership) {
+      // Extract individual memberships
+      const userMembership = memberships.find((m) => m.userId === userId);
+      const primaryMembership = memberships.find((m) => m.userId === input.primaryParentId);
+      const secondaryMembership = memberships.find((m) => m.userId === input.secondaryParentId);
+
+      // Verify user is a family member
+      if (!userMembership) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You are not a member of this family',
@@ -37,7 +43,7 @@ export const rotationRouter = router({
       }
 
       // Check edit permissions
-      if (!membership.canEditSchedule) {
+      if (!userMembership.canEditSchedule) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You do not have permission to edit schedules',
@@ -45,21 +51,7 @@ export const rotationRouter = router({
       }
 
       // Verify both parents are family members
-      const primaryMember = await db.query.familyMembers.findFirst({
-        where: and(
-          eq(familyMembers.familyId, input.familyId),
-          eq(familyMembers.userId, input.primaryParentId)
-        ),
-      });
-
-      const secondaryMember = await db.query.familyMembers.findFirst({
-        where: and(
-          eq(familyMembers.familyId, input.familyId),
-          eq(familyMembers.userId, input.secondaryParentId)
-        ),
-      });
-
-      if (!primaryMember || !secondaryMember) {
+      if (!primaryMembership || !secondaryMembership) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Both parents must be members of the family',
@@ -75,9 +67,12 @@ export const rotationRouter = router({
       );
 
       if (hasOverlap) {
+        const dateRange = input.endDate
+          ? `${input.startDate} to ${input.endDate}`
+          : `${input.startDate} onwards (no end date)`;
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'This rotation overlaps with an existing active rotation',
+          message: `This rotation (${dateRange}) overlaps with an existing active rotation. Please adjust the dates or delete the conflicting rotation.`,
         });
       }
 

@@ -6,9 +6,9 @@
  */
 
 import type { RotationPatternType } from '@/schemas/rotation';
-import { db, type Database } from '@/lib/db/client';
 import { rotationPatterns } from '@/lib/db/schema';
 import { and, eq, lte, gte, or, isNull } from 'drizzle-orm';
+import { differenceInDays } from 'date-fns';
 
 // ============================================================================
 // Pattern Configurations
@@ -70,6 +70,9 @@ export type CalendarEvent = {
 /**
  * Generate calendar events for a rotation pattern within a date range
  */
+// Maximum number of events to generate (prevents performance issues with large date ranges)
+const MAX_EVENTS = 1000;
+
 export function generateCalendarEvents(
   rotation: {
     id: string;
@@ -116,9 +119,7 @@ export function generateCalendarEvents(
 
   while (currentDate <= endDate) {
     // Calculate which day of the cycle we're on
-    const daysSinceStart = Math.floor(
-      (currentDate.getTime() - rotationStartDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const daysSinceStart = differenceInDays(currentDate, rotationStartDate);
     const dayOfCycle = daysSinceStart % config.cycleDays;
 
     // Determine which parent based on pattern
@@ -143,6 +144,15 @@ export function generateCalendarEvents(
       rotationName: rotation.name,
     });
 
+    // Safety limit to prevent performance issues with very large date ranges
+    if (events.length >= MAX_EVENTS) {
+      console.warn(
+        `Event generation limited to ${MAX_EVENTS} events for rotation ${rotation.id}. ` +
+        `Consider requesting a smaller date range.`
+      );
+      break;
+    }
+
     // Move to next day
     currentDate.setDate(currentDate.getDate() + 1);
   }
@@ -162,10 +172,13 @@ export async function validateNoOverlap(
   familyId: string,
   startDate: string,
   endDate?: string,
-  dbInstance: unknown = db
+  dbInstance?: any
 ): Promise<boolean> {
+  // Lazy-load db only when not provided (avoids DATABASE_URL check in tests)
+  const database = dbInstance || (await import('@/lib/db/client')).db;
+
   // Find all active rotations for this family
-  const existingRotations = await (dbInstance as any).query.rotationPatterns.findMany({
+  const existingRotations = await database.query.rotationPatterns.findMany({
     where: and(
       eq(rotationPatterns.familyId, familyId),
       eq(rotationPatterns.isActive, true)
