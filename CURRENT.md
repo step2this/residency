@@ -6,7 +6,7 @@
 
 ## Current Priority
 
-- **US-001**: Create rotation patterns (MVP) - Implement preset visitation schedule templates with calendar event generation
+- **Next**: Ready for US-002 or new feature work
 
 ---
 
@@ -14,7 +14,7 @@
 
 | Story | Title | Status | Notes |
 |-------|-------|--------|-------|
-| US-001 | Create Rotation Patterns (MVP) | Planning Complete | See `docs/user-stories/US-001-rotation-patterns.md` |
+| - | - | - | Ready for new work |
 
 ---
 
@@ -62,25 +62,35 @@
 
 ## Recently Completed (Last 7 Days)
 
-- ✅ US-001 Planning: Completed user story with full technical specifications
-- ✅ Architecture decisions for rotation patterns and event generation
-- ✅ Database schema design for rotation_patterns table
+- ✅ **US-001: Create Rotation Patterns (MVP)** - COMPLETE
+  - ✅ Database schema with rotation_patterns table and enum types
+  - ✅ Zod validation schemas for rotation operations
+  - ✅ tRPC router with 4 procedures (create, list, getCalendarEvents, delete)
+  - ✅ Utility functions for pattern configs and calendar event generation
+  - ✅ Rotation form component with pattern preview
+  - ✅ Rotations management page with create/delete
+  - ✅ Calendar integration showing rotation events (purple) vs manual events (blue)
+  - ✅ All unit tests passing (42 tests: 18 utils + 19 router + 5 schema)
+  - ✅ Integration tests with overlap validation
+  - ✅ Code review optimizations applied (N+1 query fix, date-fns, optimistic updates)
+  - ✅ TypeScript compilation clean
 
 ---
 
 ## Next Session TODO
 
-When starting your next Claude Code session, focus on:
+**US-001 is complete!** Ready for next user story or feature work.
 
-1. **Database Migration**: Add rotation_patterns table and enum types
-2. **Zod Schemas**: Create `/src/schemas/rotation.ts` with validation schemas
-3. **Utility Functions**: Implement pattern configs and calendar event generation
-4. **tRPC Router**: Build rotation CRUD procedures with security checks
-5. **UI Form**: Create rotation creation form component
-6. **Calendar Integration**: Update Schedule-X calendar to display rotation events
+### Potential Next Steps:
+1. **Manual Testing**: Test rotation patterns in development with real data
+2. **Database Migration**: Run `pnpm db:push` to apply schema to Neon production database
+3. **US-002**: Edit existing rotation patterns
+4. **US-003**: Custom pattern builder
+5. **Documentation**: Add usage guide or update README
 
-**Files to Review First**:
-- `/src/lib/db/schema.ts` - Understand existing schema structure
-- `/src/lib/trpc/routers/` - Review existing router patterns
-- `/src/components/calendar/schedule-calendar.tsx` - Current calendar implementation
-- `docs/user-stories/US-001-rotation-patterns.md` - Full technical specification
+### Key Files from US-001:
+- `/src/lib/db/schema.ts` - rotation_patterns table
+- `/src/lib/trpc/routers/rotation.ts` - CRUD operations
+- `/src/lib/utils/rotation-utils.ts` - Pattern configs and event generation
+- `/src/components/rotation/` - Rotation UI components
+- `/src/app/(dashboard)/dashboard/rotations/page.tsx` - Rotations management page
