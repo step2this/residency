@@ -1,8 +1,10 @@
 /**
  * Temporal API Polyfill Loader
  *
- * This file synchronously loads the Temporal polyfill.
- * Import this file at the top of any module that needs Temporal API.
+ * Loads the lightweight temporal-polyfill (20KB, spec-compliant)
+ * recommended by Schedule-X v3.
+ *
+ * The /global import installs the Temporal API on the global object.
  */
 
-import '@js-temporal/polyfill';
+import 'temporal-polyfill/global';

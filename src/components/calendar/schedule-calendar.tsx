@@ -24,14 +24,29 @@ type ScheduleCalendarProps = {
 
 export function ScheduleCalendar({ onEventClick, onCreateEvent }: ScheduleCalendarProps) {
   const [view, setView] = useQueryState('view', parseAsString.withDefault('week'));
-  const [selectedDate, setSelectedDate] = useQueryState(
+  const [selectedDateStr, setSelectedDateStr] = useQueryState(
     'date',
     parseAsString.withDefault(new Date().toISOString().split('T')[0] as string)
   );
 
+  // Convert URL state to Temporal.PlainDate for Schedule-X
+  const selectedDate = useMemo(
+    () => Temporal.PlainDate.from(selectedDateStr),
+    [selectedDateStr]
+  );
+
   // Calculate date range for fetching events (current month +/- 1 month)
-  const startDate = new Date(new Date(selectedDate).setMonth(new Date(selectedDate).getMonth() - 1));
-  const endDate = new Date(new Date(selectedDate).setMonth(new Date(selectedDate).getMonth() + 2));
+  const startDate = useMemo(() => {
+    const date = new Date(selectedDateStr);
+    date.setMonth(date.getMonth() - 1);
+    return date;
+  }, [selectedDateStr]);
+
+  const endDate = useMemo(() => {
+    const date = new Date(selectedDateStr);
+    date.setMonth(date.getMonth() + 2);
+    return date;
+  }, [selectedDateStr]);
 
   // Fetch schedule events
   const { data: events = [] } = trpc.schedule.list.useQuery({
@@ -50,8 +65,8 @@ export function ScheduleCalendar({ onEventClick, onCreateEvent }: ScheduleCalend
     const allRotationEvents: Array<{
       id: string;
       title: string;
-      start: string;
-      end: string;
+      start: Temporal.PlainDate;
+      end: Temporal.PlainDate;
       calendarId: string;
       description?: string;
     }> = [];
@@ -60,12 +75,13 @@ export function ScheduleCalendar({ onEventClick, onCreateEvent }: ScheduleCalend
       const events = generateCalendarEvents(rotation, startDateStr, endDateStr);
 
       for (const event of events) {
-        // Convert date-only events to date-time events (all-day events)
+        // All-day rotation events use Temporal.PlainDate
+        const eventDate = Temporal.PlainDate.from(event.date);
         allRotationEvents.push({
           id: `rotation-${rotation.id}-${event.date}`,
           title: `${event.parentName} (${rotation.name})`,
-          start: `${event.date}T00:00`,
-          end: `${event.date}T23:59`,
+          start: eventDate,
+          end: eventDate,
           calendarId: 'rotation',
           description: `Day ${event.dayOfCycle + 1} of ${rotation.patternType} pattern`,
         });
@@ -77,14 +93,22 @@ export function ScheduleCalendar({ onEventClick, onCreateEvent }: ScheduleCalend
 
   // Merge schedule events and rotation events
   const allEvents = useMemo(() => {
-    const scheduleEvents = events.map((event) => ({
-      id: event.id,
-      title: `${event.child.firstName} - ${event.parent.firstName}`,
-      start: new Date(event.startTime).toISOString().slice(0, 16),
-      end: new Date(event.endTime).toISOString().slice(0, 16),
-      calendarId: 'manual',
-      description: event.notes || undefined,
-    }));
+    const scheduleEvents = events.map((event) => {
+      // Timed events use Temporal.ZonedDateTime
+      // Assume user's local timezone for now
+      const timezone = Temporal.Now.timeZoneId();
+      const startInstant = Temporal.Instant.fromEpochMilliseconds(new Date(event.startTime).getTime());
+      const endInstant = Temporal.Instant.fromEpochMilliseconds(new Date(event.endTime).getTime());
+
+      return {
+        id: event.id,
+        title: `${event.child.firstName} - ${event.parent.firstName}`,
+        start: startInstant.toZonedDateTimeISO(timezone),
+        end: endInstant.toZonedDateTimeISO(timezone),
+        calendarId: 'manual',
+        description: event.notes || undefined,
+      };
+    });
 
     return [...scheduleEvents, ...rotationEvents];
   }, [events, rotationEvents]);
@@ -130,7 +154,8 @@ export function ScheduleCalendar({ onEventClick, onCreateEvent }: ScheduleCalend
         }
       },
       onRangeUpdate(range) {
-        setSelectedDate(range.start);
+        // Convert Temporal.PlainDate back to string for URL state
+        setSelectedDateStr(range.start.toString());
       },
     },
   });
