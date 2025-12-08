@@ -75,18 +75,29 @@
   - ✅ Code review optimizations applied (N+1 query fix, date-fns, optimistic updates)
   - ✅ TypeScript compilation clean
 
+- ✅ **Schedule-X Temporal API Migration** - COMPLETE (2025-12-08)
+  - ✅ Researched Schedule-X v3 polyfill requirements and best practices
+  - ✅ Switched from @js-temporal/polyfill to temporal-polyfill (20KB, recommended by Schedule-X)
+  - ✅ Fixed Next.js 15 instrumentation hook ChunkLoadError
+  - ✅ Migrated schedule-calendar.tsx to use Temporal API objects
+  - ✅ Configured ESLint 9 with flat config format
+  - ✅ All rotation events now use Temporal.PlainDate (all-day events)
+  - ✅ All schedule events now use Temporal.ZonedDateTime (timed events)
+  - ✅ TypeScript compilation clean, 240 tests passing
+
 ---
 
 ## Next Session TODO
 
-**US-001 is complete!** Ready for next user story or feature work.
+### High Priority:
+1. **Fix Dependabot Security Alert**: Update `ws` package to address security vulnerability ([GitHub Alert](https://github.com/step2this/residency/security/dependabot/1))
+2. **Manual Testing**: Test Schedule-X calendar with Temporal API in browser
+3. **Database Migration**: Run `pnpm db:push` to apply rotation_patterns schema to Neon production
 
-### Potential Next Steps:
-1. **Manual Testing**: Test rotation patterns in development with real data
-2. **Database Migration**: Run `pnpm db:push` to apply schema to Neon production database
-3. **US-002**: Edit existing rotation patterns
-4. **US-003**: Custom pattern builder
-5. **Documentation**: Add usage guide or update README
+### Future Work:
+4. **US-002**: Edit existing rotation patterns
+5. **US-003**: Custom pattern builder
+6. **Documentation**: Add usage guide or update README
 
 ### Key Files from US-001:
 - `/src/lib/db/schema.ts` - rotation_patterns table
