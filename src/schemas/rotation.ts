@@ -40,8 +40,8 @@ export const createRotationPatternSchema = z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)')
       .optional(),
-    primaryParentId: z.string().uuid('Invalid parent ID'),
-    secondaryParentId: z.string().uuid('Invalid parent ID'),
+    primaryParentId: z.string().min(1, 'Primary parent ID is required'),
+    secondaryParentId: z.string().min(1, 'Secondary parent ID is required'),
   })
   .refine(
     (data) => !data.endDate || data.endDate > data.startDate,

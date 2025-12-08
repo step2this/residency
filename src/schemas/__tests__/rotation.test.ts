@@ -142,12 +142,12 @@ describe('rotation schemas', () => {
       expectValidationError(result, 'invalid');
     });
 
-    it('should reject invalid UUID format for parent IDs', () => {
+    it('should reject empty parent IDs', () => {
       const result = createRotationPatternSchema.safeParse({
         ...validInput,
-        primaryParentId: 'not-a-uuid',
+        primaryParentId: '',
       });
-      expectValidationError(result, 'invalid');
+      expectValidationError(result, 'required');
     });
 
     it('should reject invalid pattern type', () => {
