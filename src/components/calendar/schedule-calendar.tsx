@@ -16,6 +16,12 @@ import { Button } from '@/components/ui/button';
 import { Calendar, CalendarDays } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
 import { generateCalendarEvents } from '@/lib/utils/rotation-utils';
+import {
+  toPlainDate,
+  toISODateString,
+  getDateRange,
+  dateToZonedDateTime,
+} from '@/lib/utils/date-utils';
 
 type ScheduleCalendarProps = {
   onEventClick?: (eventId: string) => void;
@@ -31,22 +37,16 @@ export function ScheduleCalendar({ onEventClick, onCreateEvent }: ScheduleCalend
 
   // Convert URL state to Temporal.PlainDate for Schedule-X
   const selectedDate = useMemo(
-    () => Temporal.PlainDate.from(selectedDateStr),
+    () => toPlainDate(selectedDateStr),
     [selectedDateStr]
   );
 
   // Calculate date range for fetching events (current month +/- 1 month)
-  const startDate = useMemo(() => {
-    const date = new Date(selectedDateStr);
-    date.setMonth(date.getMonth() - 1);
-    return date;
-  }, [selectedDateStr]);
-
-  const endDate = useMemo(() => {
-    const date = new Date(selectedDateStr);
-    date.setMonth(date.getMonth() + 2);
-    return date;
-  }, [selectedDateStr]);
+  // Uses Temporal API for safe date arithmetic (no Invalid Date edge cases)
+  const { startDate, endDate } = useMemo(
+    () => getDateRange(selectedDate),
+    [selectedDate]
+  );
 
   // Fetch schedule events
   const { data: events = [] } = trpc.schedule.list.useQuery({
@@ -59,6 +59,7 @@ export function ScheduleCalendar({ onEventClick, onCreateEvent }: ScheduleCalend
 
   // Generate rotation events for the current date range
   const rotationEvents = useMemo(() => {
+    // Convert Date range to ISO strings for generateCalendarEvents
     const startDateStr = startDate.toISOString().split('T')[0] as string;
     const endDateStr = endDate.toISOString().split('T')[0] as string;
 
@@ -76,7 +77,7 @@ export function ScheduleCalendar({ onEventClick, onCreateEvent }: ScheduleCalend
 
       for (const event of events) {
         // All-day rotation events use Temporal.PlainDate
-        const eventDate = Temporal.PlainDate.from(event.date);
+        const eventDate = toPlainDate(event.date);
         allRotationEvents.push({
           id: `rotation-${rotation.id}-${event.date}`,
           title: `${event.parentName} (${rotation.name})`,
@@ -95,16 +96,12 @@ export function ScheduleCalendar({ onEventClick, onCreateEvent }: ScheduleCalend
   const allEvents = useMemo(() => {
     const scheduleEvents = events.map((event) => {
       // Timed events use Temporal.ZonedDateTime
-      // Assume user's local timezone for now
-      const timezone = Temporal.Now.timeZoneId();
-      const startInstant = Temporal.Instant.fromEpochMilliseconds(new Date(event.startTime).getTime());
-      const endInstant = Temporal.Instant.fromEpochMilliseconds(new Date(event.endTime).getTime());
-
+      // Use utility function for clean conversion
       return {
         id: event.id,
         title: `${event.child.firstName} - ${event.parent.firstName}`,
-        start: startInstant.toZonedDateTimeISO(timezone),
-        end: endInstant.toZonedDateTimeISO(timezone),
+        start: dateToZonedDateTime(new Date(event.startTime)),
+        end: dateToZonedDateTime(new Date(event.endTime)),
         calendarId: 'manual',
         description: event.notes || undefined,
       };
