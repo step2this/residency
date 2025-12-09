@@ -101,6 +101,15 @@
   - ✅ All 262 tests passing
   - ✅ TypeScript compilation clean
 
+- ✅ **Bug Fix: Schedule event visibility** - COMPLETE (2025-12-09)
+  - ✅ Fixed schedule.list query using containment logic instead of overlap logic
+  - ✅ Created date-range-utils.ts with reusable overlap detection functions
+  - ✅ Added 15 unit tests for date range utilities (DRY, behavior-focused)
+  - ✅ Added 6 integration tests for schedule.list date filtering
+  - ✅ Events now correctly appear in calendar after creation
+  - ✅ All 283 tests passing (+21 new tests)
+  - ✅ TypeScript compilation clean
+
 ---
 
 ## Next Session TODO
