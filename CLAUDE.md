@@ -1,6 +1,16 @@
 # CoParent Schedule - Child Visitation Scheduling App
 
-## Quick Start (Read This First!)
+## Quick Reference (Check This First!)
+- **Database**: Neon Postgres (ALL environments - never local) → See "Database Strategy"
+- **API**: tRPC v11 (never GraphQL)
+- **ORM**: Drizzle (never Prisma)
+- **Auth**: Clerk (passkeys + 2FA)
+- **Deployment**: SST v3 → AWS Lambda
+- **NEVER start servers** - user controls all processes, always run pnpm test with --run and never run watch mode
+- **Git** - always do git commits after finishing a unit of work
+- **Database** - let the user perform migrations
+- **Code** - Always be type safe, keep code DRY, follow SOLID principles
+- **Tests** - Keep DRY, test behaviour not implementation, don't test too many edge cases, never use spies and minimise mocking
 
 **Essential Context:**
 - Mobile-first web app for divorced families to manage child visitation
