@@ -356,6 +356,156 @@ describe('schedule router', () => {
     });
   });
 
+  describe('schedule.list date range filtering', () => {
+    it('returns events that are completely within the query range', async () => {
+      const { parent1, family, child } = await createTestFamilySetup();
+      const db = getTestDatabase();
+
+      // Create event: Dec 9-13, 2025 (completely within Dec 1-31)
+      await createVisitationEvent({
+        familyId: family.id,
+        childId: child.id,
+        parentId: parent1.id,
+        createdBy: parent1.id,
+        startTime: new Date('2025-12-09T09:00:00Z'),
+        endTime: new Date('2025-12-13T17:00:00Z'),
+      });
+
+      // Query for Dec 1-31
+      const caller = createTestCaller(db, parent1.id);
+      const events = await caller.schedule.list({
+        startDate: new Date('2025-12-01T00:00:00Z'),
+        endDate: new Date('2025-12-31T23:59:59Z'),
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0]?.childId).toBe(child.id);
+    });
+
+    it('returns events that start before range but end within it', async () => {
+      const { parent1, family, child } = await createTestFamilySetup();
+      const db = getTestDatabase();
+
+      // Create event: Nov 28 - Dec 5 (starts before Dec, ends within Dec)
+      await createVisitationEvent({
+        familyId: family.id,
+        childId: child.id,
+        parentId: parent1.id,
+        createdBy: parent1.id,
+        startTime: new Date('2025-11-28T09:00:00Z'),
+        endTime: new Date('2025-12-05T17:00:00Z'),
+      });
+
+      // Query for December
+      const caller = createTestCaller(db, parent1.id);
+      const events = await caller.schedule.list({
+        startDate: new Date('2025-12-01T00:00:00Z'),
+        endDate: new Date('2025-12-31T23:59:59Z'),
+      });
+
+      // Event should be included because it overlaps December
+      expect(events).toHaveLength(1);
+    });
+
+    it('returns events that start within range but end after it', async () => {
+      const { parent1, family, child } = await createTestFamilySetup();
+      const db = getTestDatabase();
+
+      // Create event: Dec 28 - Jan 2 (starts in Dec, ends in Jan)
+      await createVisitationEvent({
+        familyId: family.id,
+        childId: child.id,
+        parentId: parent1.id,
+        createdBy: parent1.id,
+        startTime: new Date('2025-12-28T09:00:00Z'),
+        endTime: new Date('2026-01-02T17:00:00Z'),
+      });
+
+      // Query for December
+      const caller = createTestCaller(db, parent1.id);
+      const events = await caller.schedule.list({
+        startDate: new Date('2025-12-01T00:00:00Z'),
+        endDate: new Date('2025-12-31T23:59:59Z'),
+      });
+
+      // Event should be included because it overlaps December
+      expect(events).toHaveLength(1);
+    });
+
+    it('returns events that span the entire range', async () => {
+      const { parent1, family, child } = await createTestFamilySetup();
+      const db = getTestDatabase();
+
+      // Create event: Nov 15 - Jan 15 (completely spans December)
+      await createVisitationEvent({
+        familyId: family.id,
+        childId: child.id,
+        parentId: parent1.id,
+        createdBy: parent1.id,
+        startTime: new Date('2025-11-15T09:00:00Z'),
+        endTime: new Date('2026-01-15T17:00:00Z'),
+      });
+
+      // Query for December
+      const caller = createTestCaller(db, parent1.id);
+      const events = await caller.schedule.list({
+        startDate: new Date('2025-12-01T00:00:00Z'),
+        endDate: new Date('2025-12-31T23:59:59Z'),
+      });
+
+      // Event should be included because it overlaps December
+      expect(events).toHaveLength(1);
+    });
+
+    it('excludes events completely before the range', async () => {
+      const { parent1, family, child } = await createTestFamilySetup();
+      const db = getTestDatabase();
+
+      // Create event: Oct 1-5 (completely before December)
+      await createVisitationEvent({
+        familyId: family.id,
+        childId: child.id,
+        parentId: parent1.id,
+        createdBy: parent1.id,
+        startTime: new Date('2025-10-01T09:00:00Z'),
+        endTime: new Date('2025-10-05T17:00:00Z'),
+      });
+
+      // Query for December
+      const caller = createTestCaller(db, parent1.id);
+      const events = await caller.schedule.list({
+        startDate: new Date('2025-12-01T00:00:00Z'),
+        endDate: new Date('2025-12-31T23:59:59Z'),
+      });
+
+      expect(events).toHaveLength(0);
+    });
+
+    it('excludes events completely after the range', async () => {
+      const { parent1, family, child } = await createTestFamilySetup();
+      const db = getTestDatabase();
+
+      // Create event: Feb 1-5 (completely after December)
+      await createVisitationEvent({
+        familyId: family.id,
+        childId: child.id,
+        parentId: parent1.id,
+        createdBy: parent1.id,
+        startTime: new Date('2026-02-01T09:00:00Z'),
+        endTime: new Date('2026-02-05T17:00:00Z'),
+      });
+
+      // Query for December
+      const caller = createTestCaller(db, parent1.id);
+      const events = await caller.schedule.list({
+        startDate: new Date('2025-12-01T00:00:00Z'),
+        endDate: new Date('2025-12-31T23:59:59Z'),
+      });
+
+      expect(events).toHaveLength(0);
+    });
+  });
+
   describe('schedule.create authorization', () => {
     it('rejects creation from user without edit permission', async () => {
       const { parent1, family, child } = await createTestFamilySetup();

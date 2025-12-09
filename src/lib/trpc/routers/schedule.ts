@@ -10,6 +10,7 @@ import { type Database } from '@/lib/db/client';
 import { eq, and, gte, lte, lt, gt, ne } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { assertCanEdit, validateChildInFamily, validateParentInFamily } from '../helpers';
+import { dateRangesOverlap } from '@/lib/utils/date-range-utils';
 
 // Helper function to check for overlapping events for a child
 async function checkForOverlappingEvents(
@@ -107,11 +108,13 @@ export const scheduleRouter = router({
     .query(async ({ ctx, input }) => {
       const { db, familyId } = ctx;
 
-      // Build where conditions
+      // Build where conditions using overlap logic:
+      // Two ranges overlap if: startA < endB AND startB < endA
+      // Event overlaps query range if: event.startTime < query.endDate AND event.endTime > query.startDate
       const conditions = [
         eq(visitationEvents.familyId, familyId),
-        gte(visitationEvents.startTime, input.startDate),
-        lte(visitationEvents.endTime, input.endDate),
+        lt(visitationEvents.startTime, input.endDate),   // Event starts before query range ends
+        gt(visitationEvents.endTime, input.startDate),   // Event ends after query range starts
       ];
 
       // Add optional child filter
