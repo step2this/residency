@@ -1,6 +1,6 @@
 # Current Focus
 
-**Last Updated**: 2025-12-08
+**Last Updated**: 2025-12-09
 
 ---
 
@@ -85,19 +85,34 @@
   - ✅ All schedule events now use Temporal.ZonedDateTime (timed events)
   - ✅ TypeScript compilation clean, 240 tests passing
 
+- ✅ **Date Utilities Migration to Temporal API** - COMPLETE (2025-12-09)
+  - ✅ Created centralized date-utils.ts with Temporal API helpers
+  - ✅ Fixed Invalid Date bug caused by Date.setMonth() mutations
+  - ✅ Eliminated string manipulation code smells (.split('T')[0])
+  - ✅ Refactored schedule-calendar.tsx to use immutable date operations
+  - ✅ Added 22 comprehensive unit tests (DRY, behavior-focused)
+  - ✅ All 262 tests passing
+  - ✅ TypeScript compilation clean
+
+- ✅ **Security: Fixed esbuild vulnerability (GHSA-67mh-4wv8-2f99)** - COMPLETE (2025-12-09)
+  - ✅ Added pnpm override to force esbuild >=0.25.0
+  - ✅ Upgraded from esbuild 0.18-0.21 to 0.27.1
+  - ✅ Fixed moderate severity CORS vulnerability in dev server
+  - ✅ All 262 tests passing
+  - ✅ TypeScript compilation clean
+
 ---
 
 ## Next Session TODO
 
 ### High Priority:
-1. **Fix Dependabot Security Alert**: Update `ws` package to address security vulnerability ([GitHub Alert](https://github.com/step2this/residency/security/dependabot/1))
-2. **Manual Testing**: Test Schedule-X calendar with Temporal API in browser
-3. **Database Migration**: Run `pnpm db:push` to apply rotation_patterns schema to Neon production
+1. **Manual Testing**: Test Schedule-X calendar with Temporal API in browser to verify Invalid Date bug fix
+2. **Database Migration**: Run `pnpm db:push` to apply rotation_patterns schema to Neon production
 
 ### Future Work:
-4. **US-002**: Edit existing rotation patterns
-5. **US-003**: Custom pattern builder
-6. **Documentation**: Add usage guide or update README
+3. **US-002**: Edit existing rotation patterns
+4. **US-003**: Custom pattern builder
+5. **Documentation**: Add usage guide or update README
 
 ### Key Files from US-001:
 - `/src/lib/db/schema.ts` - rotation_patterns table
