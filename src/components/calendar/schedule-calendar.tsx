@@ -54,6 +54,14 @@ export function ScheduleCalendar({ onEventClick, onCreateEvent }: ScheduleCalend
     endDate,
   });
 
+  // DEBUG: Log query parameters and results
+  console.log('[ScheduleCalendar] Query params:', {
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+    selectedDateStr,
+  });
+  console.log('[ScheduleCalendar] Events from tRPC:', events.length, events);
+
   // Fetch rotation patterns
   const { data: rotations = [] } = trpc.rotation.list.useQuery();
 
@@ -97,7 +105,7 @@ export function ScheduleCalendar({ onEventClick, onCreateEvent }: ScheduleCalend
     const scheduleEvents = events.map((event) => {
       // Timed events use Temporal.ZonedDateTime
       // Use utility function for clean conversion
-      return {
+      const scheduleEvent = {
         id: event.id,
         title: `${event.child.firstName} - ${event.parent.firstName}`,
         start: dateToZonedDateTime(new Date(event.startTime)),
@@ -105,9 +113,28 @@ export function ScheduleCalendar({ onEventClick, onCreateEvent }: ScheduleCalend
         calendarId: 'manual',
         description: event.notes || undefined,
       };
+
+      // DEBUG: Log each schedule event transformation
+      console.log('[ScheduleCalendar] Transformed schedule event:', {
+        id: scheduleEvent.id,
+        title: scheduleEvent.title,
+        start: scheduleEvent.start.toString(),
+        end: scheduleEvent.end.toString(),
+        calendarId: scheduleEvent.calendarId,
+      });
+
+      return scheduleEvent;
     });
 
-    return [...scheduleEvents, ...rotationEvents];
+    const merged = [...scheduleEvents, ...rotationEvents];
+
+    // DEBUG: Log final merged events for Schedule-X
+    console.log('[ScheduleCalendar] Total events for Schedule-X:', merged.length, {
+      scheduleCount: scheduleEvents.length,
+      rotationCount: rotationEvents.length,
+    });
+
+    return merged;
   }, [events, rotationEvents]);
 
   const calendar = useCalendarApp({
