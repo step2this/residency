@@ -1,18 +1,20 @@
 # CoParent Schedule - Child Visitation Scheduling App
 
-## Quick Reference (Check This First!)
-- **Database**: Neon Postgres (ALL environments - never local) → See "Database Strategy"
-- **API**: tRPC v11 (never GraphQL)
-- **ORM**: Drizzle (never Prisma)
-- **Auth**: Clerk (passkeys + 2FA)
-- **Deployment**: SST v3 → AWS Lambda
-- **NEVER start servers** - user controls all processes, always run pnpm test with --run and never run watch mode
-- **Git** - always do git commits after finishing a unit of work 
-- **Database** - let the user perform migrations
-- **Code** - Always be type safe, keep code DRY, follow SOLID principles
+## Quick Start (Read This First!)
 
-## Project Overview
-Mobile-first web application for divorced families to manage child visitation schedules. Built with modern React/Next.js stack, serverless AWS backend, and emphasis on security for sensitive family data.
+**Essential Context:**
+- Mobile-first web app for divorced families to manage child visitation
+- Modern React/Next.js stack with serverless AWS backend
+- Security-first: Clerk auth + Neon Postgres
+- **MVP Focus**: Build what's needed now, not enterprise features
+
+**Critical Files to Reference:**
+- `MVP_SCOPE.md` - What NOT to build, avoid over-engineering
+- `UI_PATTERNS.md` - Component architecture, React patterns
+- `CODING_PRINCIPLES.md` - SOLID, DRY, YAGNI with examples
+- `TESTING.md` - Testing philosophy (no mocks, behavior-focused)
+- `DATABASE.md` - Drizzle ORM patterns, Neon usage
+- `GIT_WORKFLOW.md` - Commit strategy, message format
 
 ## Tech Stack
 
@@ -22,15 +24,15 @@ Mobile-first web application for divorced families to manage child visitation sc
 - **Language**: TypeScript (strict mode)
 - **Styling**: Tailwind CSS + shadcn/ui components
 - **Calendar**: Schedule-X (mobile-first)
-- **State**: React 19 primitives (useOptimistic, useActionState) + nuqs for URL state
+- **State**: React 19 primitives + nuqs for URL state
 - **Forms**: react-hook-form + zod
 
-### Backend
-- **API Layer**: tRPC v11 (NOT GraphQL)
-- **Validation**: Zod schemas (shared frontend/backend)
-- **Database**: Neon Postgres (serverless)
+### Backend  
+- **API**: tRPC v11 (NOT GraphQL)
+- **Validation**: Zod schemas (shared)
+- **Database**: Neon Postgres (ALL environments)
 - **ORM**: Drizzle ORM
-- **Auth**: Clerk (passkeys + TOTP 2FA)
+- **Auth**: Clerk (passkeys + 2FA)
 
 ### Infrastructure
 - **Deployment**: SST v3 → AWS Lambda
@@ -39,62 +41,45 @@ Mobile-first web application for divorced families to manage child visitation sc
 
 ## Critical Constraints
 
-### Database Strategy (READ THIS FIRST)
-**USE NEON FOR EVERYTHING - NO EXCEPTIONS**
-- **Development**: Connect directly to Neon cloud database
-- **Staging**: Neon cloud database
-- **Production**: Neon cloud database
-- **NEVER use local Postgres** - always use Neon's connection string
-- **Connection**: Direct to Neon via `postgresql://...neon.tech/...` (no localhost proxy)
-- **Driver**: `drizzle-orm/neon-serverless` with `@neondatabase/serverless`
-
-**Why:** Neon is serverless, has built-in branching, and ensures dev/prod parity.
+### Database: ALWAYS Use Neon
+- **Development**: Neon cloud database (NOT localhost)
+- **Connection**: `postgresql://...neon.tech/...`
+- **Driver**: `drizzle-orm/neon-serverless`
+- **Why**: Serverless, branching, dev/prod parity
 
 ### DO NOT USE
-- GraphQL (use tRPC instead)
+- Local Postgres (use Neon for everything)
+- GraphQL (use tRPC)
+- Prisma (use Drizzle)
 - Redux/Zustand for server state (use Server Components)
-- Prisma (use Drizzle for serverless)
-- Aurora Serverless (use Neon)
-- AWS Amplify for deployment (use SST)
 - react-big-calendar or FullCalendar (use Schedule-X)
-- **Local Postgres** (use Neon cloud for all environments)
 
-### Security Requirements
-- All auth flows via Clerk
-- Passkey support required
-- TOTP 2FA for sensitive operations
-- Row-level security in database
-- Input validation on both client AND server
-- Never trust client-side data
-
-### Development Workflow Rules
-- **NEVER start dev servers** (pnpm dev, npm start, etc.) - they become zombie background processes
-- User will start and stop all servers manually
-- NEVER run background processes without explicit user request
-- If user needs a server started, inform them but don't start it yourself
+### Development Workflow
+- **NEVER start dev servers** - user controls all processes
+- No background processes without explicit request
+- If server needed, inform user but don't start
 
 ## Project Structure
 
 ```
 /
 ├── src/
-│   ├── app/                    # Next.js App Router pages
-│   │   ├── (auth)/            # Auth routes (sign-in, sign-up)
-│   │   ├── (dashboard)/       # Protected dashboard routes
-│   │   ├── api/               # API routes (tRPC)
-│   │   └── layout.tsx
+│   ├── app/                    # Next.js App Router
+│   │   ├── (auth)/            # Auth routes
+│   │   ├── (dashboard)/       # Protected routes
+│   │   └── api/               # tRPC endpoints
 │   ├── components/
-│   │   ├── ui/                # shadcn/ui components
+│   │   ├── ui/                # shadcn/ui base
 │   │   ├── calendar/          # Schedule-X wrappers
-│   │   └── forms/             # Form components
+│   │   └── [domain]/          # Feature components
 │   ├── lib/
 │   │   ├── db/                # Drizzle schema & client
-│   │   ├── trpc/              # tRPC router & procedures
-│   │   └── utils/             # Shared utilities
-│   ├── schemas/               # Zod schemas (shared)
-│   └── hooks/                 # Custom React hooks
-├── sst.config.ts              # SST deployment config
-├── drizzle.config.ts          # Drizzle migrations
+│   │   ├── trpc/              # tRPC routers
+│   │   └── [domain]/          # Business logic
+│   ├── schemas/               # Zod validation
+│   └── hooks/                 # React hooks
+├── sst.config.ts              # SST deployment
+├── drizzle.config.ts          # Migrations config
 └── CLAUDE.md                  # This file
 ```
 
@@ -102,247 +87,132 @@ Mobile-first web application for divorced families to manage child visitation sc
 
 ```bash
 # Development
-pnpm dev                       # Start dev server
+pnpm dev                       # Start dev server (user runs)
 pnpm build                     # Production build
-pnpm typecheck                 # Run TypeScript checks
-pnpm lint                      # ESLint (check for issues)
-pnpm lint:fix                  # ESLint (auto-fix issues)
+pnpm typecheck                 # TypeScript checks
+pnpm lint                      # ESLint
 pnpm test                      # Run tests
 
 # Database
-pnpm db:generate               # Generate Drizzle migrations
+pnpm db:generate               # Generate migrations
 pnpm db:push                   # Push schema to Neon
-pnpm db:studio                 # Open Drizzle Studio
+pnpm db:studio                 # Drizzle Studio
 
 # Deployment
 pnpm sst:dev                   # SST dev mode
 pnpm sst:deploy                # Deploy to AWS
 ```
 
-## Code Style
-
-### ESLint Configuration
-- **Format**: Flat config (`eslint.config.js`) - required for ESLint 9
-- **Plugins**: TypeScript, React, Next.js, accessibility
-- **Key Rules**:
-  - Unused vars must start with `_` (e.g., `_unused`)
-  - Prefer `type` imports for type-only imports
-  - No `console.log` (use `console.warn` or `console.error`)
-  - Prefer template literals over string concatenation
-  - React hooks exhaustive-deps warnings enabled
-- **Auto-fix**: Run `pnpm lint:fix` to auto-fix 8+ common issues
-- **Test files**: More relaxed rules (allow `any`, `console.log`)
-- **Config files**: Allow `require()` and anonymous exports
+## Code Style Quick Reference
 
 ### TypeScript
 - Strict mode enabled
-- No `any` types - use `unknown` and narrow (exception: tests and explicit cases)
-- Prefer `type` over `interface` for consistency
-- Use Zod for runtime validation, infer types from schemas
+- No `any` - use `unknown` and narrow
+- Prefer `type` over `interface`
+- Infer types from Drizzle/Zod
 
 ### React/Next.js
-- Server Components by default, `'use client'` only when needed
-- Use Server Actions for simple mutations
-- Use tRPC for complex data fetching with caching
-- Colocate components with their routes when possible
-
-### Database
-- Use Drizzle's relational queries for joins
-- Always use parameterized queries
-- Schema changes via migrations only
+- Server Components by default
+- `'use client'` only when needed
+- Server Actions for mutations
+- tRPC for complex data fetching
+- Colocate with routes
 
 ### Naming
-- Components: PascalCase (`ScheduleCalendar.tsx`)
-- Files: kebab-case (`schedule-utils.ts`)
-- tRPC procedures: camelCase (`schedule.create`)
-- Database tables: snake_case (`visitation_events`)
+- Components: `PascalCase` (ScheduleCalendar.tsx)
+- Files: `kebab-case` (schedule-utils.ts)
+- tRPC procedures: `camelCase` (schedule.create)
+- Database tables: `snake_case` (visitation_events)
 
-## Key Patterns
+## Key Architecture Patterns
+
+### Separation of Concerns
+```
+app/[route]/page.tsx       → Orchestration (what to render)
+lib/[domain]/queries.ts    → Data access (how to fetch)
+lib/[domain]/utils.ts      → Business logic (domain rules)
+components/[domain]/       → Presentation (how to display)
+schemas/[domain].ts        → Validation (what's valid)
+```
 
 ### tRPC + Zod Contract
 ```typescript
-// schemas/schedule.ts - Single source of truth
-export const createScheduleSchema = z.object({
-  title: z.string().min(1).max(100),
-  startTime: z.date(),
-  endTime: z.date(),
-  childIds: z.array(z.string().uuid()),
-});
-export type CreateScheduleInput = z.infer<typeof createScheduleSchema>;
+// Single source of truth
+export const createEventSchema = z.object({ /* */ });
+export type CreateEventInput = z.infer<typeof createEventSchema>;
 
-// lib/trpc/routers/schedule.ts
-export const scheduleRouter = router({
-  create: protectedProcedure
-    .input(createScheduleSchema)
-    .mutation(async ({ ctx, input }) => {
-      // input is fully typed
-    }),
-});
+// Used in tRPC
+.input(createEventSchema)
+.mutation(async ({ input }) => { /* fully typed */ })
 ```
 
-### Server Components Data Fetching
+### Server Components Pattern
 ```tsx
-// app/(dashboard)/schedule/page.tsx
-export default async function SchedulePage() {
-  const schedules = await db.query.schedules.findMany({
-    where: eq(schedules.userId, auth().userId),
-    with: { events: true },
-  });
-  return <ScheduleCalendar initialData={schedules} />;
+// Fetch in Server Component
+export default async function Page() {
+  const data = await db.query.events.findMany();
+  return <ClientComponent initialData={data} />;
 }
 ```
 
-### Clerk Auth Integration
-```typescript
-// lib/trpc/context.ts
-export const createContext = async () => {
-  const { userId } = await auth();
-  return { userId, db };
-};
-
-// Protected procedure
-export const protectedProcedure = publicProcedure.use(async ({ ctx, next }) => {
-  if (!ctx.userId) throw new TRPCError({ code: 'UNAUTHORIZED' });
-  return next({ ctx: { ...ctx, userId: ctx.userId } });
-});
-```
-
-## Testing Strategy
-- Unit tests: Vitest for utilities and schemas
-- Component tests: React Testing Library
-- E2E tests: Playwright for critical user flows
-- Run `pnpm typecheck` before all tests
-
 ## Before Committing
-1. Run `pnpm typecheck` - must pass
-2. Run `pnpm lint` - fix any errors
-3. Run `pnpm test` - all tests green
-4. Verify mobile responsiveness in dev tools
 
-## Git Commit Strategy
+1. ✅ `pnpm typecheck` - must pass
+2. ✅ `pnpm lint` - fix errors
+3. ✅ `pnpm test` - all green
+4. ✅ Remove debug code
+5. ✅ Check mobile responsiveness
+6. ✅ Follow commit message format (see GIT_WORKFLOW.md)
 
-### Organize Commits by Logical Boundaries
+## Skill File Guide
 
-Create separate, focused commits for each distinct concern:
+**When working on...**
 
-**Good commit organization:**
-```bash
-feat: initialize project foundation        # Dependencies, configs
-feat: implement database schema           # Complete schema in one commit
-feat: implement Clerk authentication      # All auth files together
-feat: build tRPC v11 infrastructure       # Complete tRPC setup
-feat: add Zod validation schemas          # All schemas together
-feat: implement family router             # One router at a time
-```
-
-**Why this works:**
-- Each commit is self-contained and functional
-- Easy to review changes by feature
-- Simple to revert if needed
-- Clear project evolution in git log
-
-### Commit Message Format
-
-Use conventional commits with descriptive bodies:
-
-```
-<type>: <short description>
-
-<detailed explanation if needed>
-
-<any breaking changes or notes>
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
-```
-
-**Types:**
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `refactor:` - Code refactoring
-- `docs:` - Documentation only
-- `test:` - Adding tests
-- `chore:` - Tooling, configs
-- `security:` - Security improvements
-
-### Handling Secrets and Sensitive Data
-
-**Never commit:**
-- API keys, tokens, passwords
-- `.env.local` files
-- Files with personal credentials
-
-**Best practices:**
-1. Create `.example` template files (`.env.example`, `.mcp.json.example`)
-2. Add real files to `.gitignore`
-3. If accidentally committed, use `git filter-branch` to rewrite history:
-
-```bash
-# Remove file from all commits
-git filter-branch --force --index-filter \
-  'git rm --cached --ignore-unmatch .mcp.json' \
-  --prune-empty --tag-name-filter cat -- --all
-
-# Clean up refs
-git for-each-ref --format='%(refname)' refs/original/ | \
-  xargs -n 1 git update-ref -d
-
-# Garbage collect
-git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-```
-
-**Files to always gitignore:**
-- `.env`, `.env.local` (env vars with secrets)
-- `.mcp.json` (MCP server configs with tokens)
-- `/.clerk/` (Clerk config directory)
-- `/.claude/` (Claude Code plans/cache)
-
-### When to Commit
-
-Commit when you've completed a logical unit of work:
-
-✅ **Good times to commit:**
-- Finished implementing a complete feature
-- Added all files for a specific layer (schema, routes, etc.)
-- Fixed a bug and added tests
-- Completed a refactoring
-
-❌ **Avoid committing:**
-- Work-in-progress / broken code
-- Half-implemented features
-- Commented-out code
-- Debug console.logs
-
-### Multiple Files Per Commit
-
-Group related files together:
-
-```bash
-# Database layer
-git add drizzle.config.ts src/lib/db/
-git commit -m "feat: implement database schema with Drizzle ORM"
-
-# Authentication
-git add src/middleware.ts src/app/(auth)/ src/app/api/webhooks/clerk/
-git commit -m "feat: implement Clerk authentication"
-```
+| Task | Read These Files |
+|------|------------------|
+| New feature planning | MVP_SCOPE.md, CODING_PRINCIPLES.md |
+| UI/components | UI_PATTERNS.md, CODING_PRINCIPLES.md |
+| Database changes | DATABASE.md |
+| Testing | TESTING.md |
+| Git commits | GIT_WORKFLOW.md |
+| Architecture decisions | CODING_PRINCIPLES.md, UI_PATTERNS.md |
 
 ## Domain Context
 
 ### Users
-- Two co-parents per family unit
-- Optional: attorneys, grandparents with view-only access
+- Two co-parents per family
+- Optional: attorneys, grandparents (view-only)
 - Children are managed entities, not users
 
-### Schedules
-- Recurring patterns (weekly, biweekly)
-- Holiday exceptions
-- Swap requests between parents
-- Audit trail for legal purposes
+### Core Features (MVP)
+1. Authentication (Clerk)
+2. Family/child profiles
+3. Calendar view (Schedule-X)
+4. Create/view visitation events
+5. Recurring schedules
+6. Swap requests
+7. Email notifications
 
-### Notifications
-- Schedule change alerts
-- Swap request notifications
-- Reminder before pickup/dropoff times
+### Out of Scope (See MVP_SCOPE.md)
+- Multi-tenant architecture
+- Advanced analytics
+- Payment processing
+- Admin panels
+- Real-time collaboration
+- Mobile native apps
+- Complex RBAC (just 2 roles)
+
+## Security Requirements
+- All auth via Clerk
+- Passkey support required
+- TOTP 2FA for sensitive ops
+- Row-level security in DB
+- Input validation client AND server
+- Never trust client data
+
+## Remember
+- **MVP First** - Read MVP_SCOPE.md before adding features
+- **Separation of Concerns** - Logic ≠ Presentation (see UI_PATTERNS.md)
+- **SOLID Principles** - See CODING_PRINCIPLES.md for examples
+- **Test Behavior** - Not implementation (see TESTING.md)
+- **Commit Clean** - Follow GIT_WORKFLOW.md conventions
