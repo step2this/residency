@@ -1,0 +1,31 @@
+{
+  "$schema": "https://claude.ai/schemas/claude-code-settings.json",
+  "hooks": {
+    "postToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "command": "pnpm typecheck --noEmit 2>&1 | head -5 || true",
+        "description": "Quick typecheck after file changes"
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(pnpm *)",
+      "Bash(git *)",
+      "Bash(npm *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(mkdir *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | bash)"
+    ]
+  },
+  "env": {
+    "NODE_ENV": "development"
+  }
+}

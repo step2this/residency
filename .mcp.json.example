@@ -2,7 +2,8 @@
   "mcpServers": {
     "neon": {
       "command": "npx",
-      "args": ["-y", "mcp-remote", "https://mcp.neon.tech/mcp"]
+      "args": ["-y", "mcp-remote", "https://mcp.neon.tech/mcp"],
+      "_comment": "OAuth-based Neon access. For API key access, use @neondatabase/mcp-server-neon with NEON_API_KEY env var"
     },
     "context7": {
       "command": "npx",
@@ -22,6 +23,11 @@
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "your_github_token_here"
       }
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "_comment": "Persistent memory across sessions"
     }
   }
 }

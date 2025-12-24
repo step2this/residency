@@ -66,5 +66,10 @@ drizzle/
 # clerk configuration (can include secrets)
 /.clerk/
 
-# Claude Code
-/.claude/
+# Claude Code - keep commands and project settings, ignore local/personal
+/.claude/settings.local.json
+/.claude/cache/
+/.claude/*.log
+# Track these (remove from gitignore):
+# - .claude/commands/ (project-specific slash commands)
+# - .claude/settings.json (project-level settings, no secrets)
