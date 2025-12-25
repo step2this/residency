@@ -66,10 +66,19 @@ drizzle/
 # clerk configuration (can include secrets)
 /.clerk/
 
-# Claude Code - keep commands and project settings, ignore local/personal
+# Claude Code - keep commands, skills, agents, and settings; ignore local/personal
+/.claude.json
+/.claude.json.backup
 /.claude/settings.local.json
 /.claude/cache/
 /.claude/*.log
-# Track these (remove from gitignore):
-# - .claude/commands/ (project-specific slash commands)
-# - .claude/settings.json (project-level settings, no secrets)
+/.claude/.credentials.json
+/.claude/debug/
+/.claude/shell-snapshots/
+/.claude/statsig/
+/.claude/todos/
+# Track these (committed to project):
+# - .claude/commands/      (slash commands)
+# - .claude/skills/        (skills for autonomous work)
+# - .claude/agents/        (specialized agents)
+# - .claude/settings.json  (project settings, no secrets)
