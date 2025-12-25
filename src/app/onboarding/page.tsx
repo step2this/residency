@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering to avoid useSearchParams() prerender issues
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { parseAsInteger, useQueryState } from 'nuqs';

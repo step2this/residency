@@ -8,6 +8,9 @@ import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
+// Force dynamic rendering for entire app (MVP deployment)
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'CoParent Schedule - Child Visitation Scheduling',
   description: 'Manage child visitation schedules for divorced families',
