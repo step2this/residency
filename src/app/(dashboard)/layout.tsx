@@ -1,12 +1,32 @@
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 import { DashboardNav } from '@/components/dashboard-nav';
 import { UserMenu } from '@/components/user-menu';
 import { MobileNav } from '@/components/mobile-nav';
+import { hasCompletedOnboarding } from '@/lib/family/queries';
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Get authenticated user (Clerk middleware ensures this exists)
+  const { userId } = await auth();
+
+  // Safety check (should never happen due to Clerk middleware)
+  if (!userId) {
+    redirect('/sign-in');
+  }
+
+  // ONBOARDING GUARD: Check if user has completed onboarding
+  const completedOnboarding = await hasCompletedOnboarding(userId);
+
+  if (!completedOnboarding) {
+    // Redirect to onboarding to complete family setup
+    redirect('/onboarding');
+  }
+
+  // User has family, render dashboard layout
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header */}
